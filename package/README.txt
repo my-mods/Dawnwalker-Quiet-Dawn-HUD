@@ -1,8 +1,8 @@
-# Quiet Dawn HUD
+# Quiet Dawn HUD - Auto-hide HUD
 
 A quiet view of the world, with the essentials returning when you need them.
 
-Quiet Dawn HUD is a standalone HUD mod for **The Blood of Dawnwalker**. Health/stamina panels, compass, quest tracker, quickslots, and crosshair are hidden by default. HUD preset and focus events refresh their visibility for combat, drawn weapons, lock-on, and focus. **F8** toggles a persistent manual reveal.
+Quiet Dawn HUD - Auto-hide HUD is a standalone HUD mod for **The Blood of Dawnwalker**. Health/stamina panels, compass, quest tracker, quickslots, and crosshair are hidden by default. HUD preset and focus events refresh their visibility for combat, drawn weapons, lock-on, and focus. **F8** toggles a persistent manual reveal.
 
 Interaction prompts, dialogue, subtitles, notifications, boss bars, ability panels, and menus retain their normal game behavior. Revealing a panel restores its original opacity; it does not force the game to display a panel that its current HUD preset has hidden.
 
@@ -17,18 +17,24 @@ Interaction prompts, dialogue, subtitles, notifications, boss bars, ability pane
 ## Install, update, and remove
 
 1. Close the game. In Vortex, disable HUD Tweaks and its Fixes submod, then deploy.
-2. Import `Quiet-Dawn-HUD.zip`, enable it, and deploy. The installer must select **UE4SS (Lua mods)**.
+2. Import `Quiet-Dawn-HUD.zip` (standard) or `Quiet-Dawn-HUD-Show-Compass.zip` (optional Show Compass version), enable it, and deploy. The installer must select **UE4SS (Lua mods)**.
 3. The payload belongs under `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/`. Start the game normally; live Lua reload is not supported.
 
-For updates, back up any configuration changes and replace the existing Quiet Dawn HUD entry using the same ZIP filename. The shipped configuration is a full replacement, not an automatic merge. If Vortex chose an incorrect layout, remove/reinstall the archive through its installer; redeployment alone preserves the incorrect layout.
+For updates, back up any configuration changes and replace the existing Quiet Dawn HUD - Auto-hide HUD entry using the same ZIP filename. The shipped configuration is a full replacement, not an automatic merge. If Vortex chose an incorrect layout, remove/reinstall the archive through its installer; redeployment alone preserves the incorrect layout.
 
-To uninstall, close the game, disable/remove Quiet Dawn HUD in Vortex, and deploy. You can then re-enable your previous HUD mods. No save-game changes are made.
+To uninstall, close the game, disable/remove Quiet Dawn HUD - Auto-hide HUD in Vortex, and deploy. You can then re-enable your previous HUD mods. No save-game changes are made.
+
+## Optional Show Compass version
+
+`Quiet-Dawn-HUD-Show-Compass.zip` is a complete alternative package. It leaves the compass under normal game control while the other five panels still auto-hide. The compass stays available during exploration; the game can still hide it in menus, dialogue, or other special states.
+
+Install **one version only**. Both versions use the same internal mod ID and runtime paths. To switch, close the game, back up your configuration, disable/remove the previous entry in Vortex and deploy, then import the other ZIP, enable it, and deploy. Do not keep both enabled or set conflict winners between them.
 
 ## Configuration
 
 Edit `Scripts/QuietDawnConfig.lua` through your normal mod configuration workflow, then restart the game. Do not edit a deployed hardlink directly.
 
-The file lists the six managed panels. Remove an entry to leave that panel under game control. `showWeaponDrawn`, `showInFocus`, and `showLockedOn` control those reveal conditions. Combat also reveals the panels when the current world's combat subsystem is available. `manualRevealKey` defaults to `F8`; set it to `nil` to omit the shortcut. `enabled = false` disables the mod at startup.
+The standard configuration lists six managed panels; Show Compass lists five and omits `WBP_Compass`. Remove an entry to leave that panel under game control. `showWeaponDrawn`, `showInFocus`, and `showLockedOn` control those reveal conditions. Combat also reveals the panels when the current world's combat subsystem is available. `manualRevealKey` defaults to `F8`; set it to `nil` to omit the shortcut. `enabled = false` disables the mod at startup.
 
 ## How it works
 

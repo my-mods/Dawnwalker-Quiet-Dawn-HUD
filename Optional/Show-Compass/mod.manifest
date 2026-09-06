@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mod>
   <info>
-    <name>Quiet Dawn HUD - Auto-hide HUD</name>
+    <name>Quiet Dawn HUD - Auto-hide HUD - Show Compass</name>
     <modid>QuietDawnHUD</modid>
-    <description>Standalone event-driven HUD: quiet exploration, contextual reveal, and no idle activity polling. Development build; in-game validation pending.</description>
+    <description>Optional Show Compass version. Compass follows normal game visibility; other panels auto-hide. Standalone event-driven HUD: quiet exploration, contextual reveal, and no idle activity polling. Development build; in-game validation pending.</description>
     <author>my-mods</author>
     <version>0.0.0</version>
     <created_on>2026-09-06</created_on>

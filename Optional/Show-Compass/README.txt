@@ -1,3 +1,6 @@
+OPTIONAL SHOW COMPASS VERSION
+This is a complete alternative package. Install only one version.
+
 # Quiet Dawn HUD - Auto-hide HUD
 
 A quiet view of the world, with the essentials returning when you need them.
