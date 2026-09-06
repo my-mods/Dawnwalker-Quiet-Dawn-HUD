@@ -1,0 +1,17 @@
+[
+  {
+    "type": "attribute",
+    "key": "customFileName",
+    "value": "Quiet Dawn HUD"
+  },
+  {
+    "type": "attribute",
+    "key": "version",
+    "value": "0.0.0"
+  },
+  {
+    "type": "attribute",
+    "key": "description",
+    "value": "Standalone event-driven HUD: quiet exploration, contextual reveal, and no idle activity polling. Development build; in-game validation pending."
+  }
+]

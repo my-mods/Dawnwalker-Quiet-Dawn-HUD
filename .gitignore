@@ -1,0 +1,5 @@
+.local/
+*.ps1
+*.zip
+AGENTS.md
+tests/

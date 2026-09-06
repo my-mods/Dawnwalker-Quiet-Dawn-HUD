@@ -1,0 +1,16 @@
+[b]Quiet Dawn HUD[/b]
+A quiet view of the world, with the essentials returning when you need them.
+
+Hides health/stamina panels, compass, quest tracker, quickslots, and crosshair during quiet exploration. HUD preset and focus events refresh the panels for combat, drawn weapons, lock-on, and focus. F8 toggles a manual reveal. Interaction prompts, subtitles, notifications, boss bars, and menus retain their normal behavior.
+
+[b]Development build[/b]
+In-game validation and performance measurements are pending. Designed around Steam build 25129649 and a Dawnwalker-compatible UE4SS build with delayed game-thread callbacks. This is a standalone alternative: disable HUD Tweaks and HUD Tweaks - Fixes before enabling it.
+
+[b]Install[/b]
+Close the game. Disable the previous HUD mods in Vortex and deploy. Import Quiet-Dawn-HUD.zip, choose UE4SS (Lua mods), enable, and deploy. Restart the game. F8 reveals the panels; press again to return to contextual behavior.
+
+[b]Configuration and updates[/b]
+QuietDawnConfig.lua selects panels, reveal conditions, and the shortcut. Configuration loads at startup. Back up preferences before replacing the mod: the shipped configuration is a full replacement, not a merge. Remove through Vortex with the game closed.
+
+[b]License[/b]
+MIT. No game assets or UE4SS binaries included.

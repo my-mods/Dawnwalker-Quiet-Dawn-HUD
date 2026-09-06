@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#091821"/><stop offset="1" stop-color="#263a40"/></linearGradient></defs>
+<rect width="1280" height="720" fill="url(#sky)"/>
+<circle cx="970" cy="280" r="100" fill="#dfb976"/>
+<path d="M0 490L190 280 390 480 570 330 800 500 1040 365 1280 520V720H0Z" fill="#152a31"/>
+<path d="M0 590L280 480 490 580 700 450 950 585 1150 510 1280 570V720H0Z" fill="#0c2028"/>
+<path d="M94 166H176M94 166V248M1186 554H1104M1186 554V472" fill="none" stroke="#dfb976" stroke-width="3"/>
+<text x="146" y="310" fill="#eee8da" font-family="Georgia,serif" font-size="88">Quiet Dawn</text>
+<text x="150" y="380" fill="#dfb976" font-family="sans-serif" font-size="32" letter-spacing="12">HUD</text>
+<text x="150" y="457" fill="#c9d3d0" font-family="sans-serif" font-size="24">The world first. The essentials when needed.</text>
+<text x="150" y="634" fill="#849b9f" font-family="sans-serif" font-size="18" letter-spacing="3">THE BLOOD OF DAWNWALKER</text>
+</svg>

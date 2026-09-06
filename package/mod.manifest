@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mod>
+  <info>
+    <name>Quiet Dawn HUD</name>
+    <modid>QuietDawnHUD</modid>
+    <description>Standalone event-driven HUD: quiet exploration, contextual reveal, and no idle activity polling. Development build; in-game validation pending.</description>
+    <author>my-mods</author>
+    <version>0.0.0</version>
+    <created_on>2026-09-06</created_on>
+  </info>
+  <supports><game>The Blood of Dawnwalker</game><steam_build>25129649</steam_build><loader>Dawnwalker-compatible UE4SS with delayed game-thread callbacks</loader></supports>
+</mod>
