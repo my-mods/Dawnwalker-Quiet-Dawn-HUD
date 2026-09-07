@@ -26,6 +26,11 @@ for _, name in ipairs(config.panels) do
     names[#names+1] = name
 end
 if type(config.enabled) ~= "boolean" then return end
+if config.compassOpacity~=nil and (type(config.compassOpacity)~="number"
+    or config.compassOpacity~=config.compassOpacity or config.compassOpacity<0 or config.compassOpacity>1) then
+    print("[Quiet Dawn HUD] Invalid compass opacity; disabled.")
+    return
+end
 for _, key in ipairs({"healthThreshold", "staminaThreshold"}) do
     local value=config[key]
     if type(value) ~= "number" or value ~= value or value < 0 or value > 1 then
@@ -398,6 +403,7 @@ local function step()
                 end
                 local isStats = name == "HumanStats" or name == "VampireStats"
                 local target = isStats and desired == 1 and entry.original or 0
+                if name=="WBP_Compass" and config.compassOpacity~=nil then target=config.compassOpacity end
                 if current ~= target then
                     object:SetRenderOpacity(target)
                     if D.debugLogging then D.count("panelWrites");D.event("panel","name=%s opacity=%.3f->%.3f",name,current,target) end

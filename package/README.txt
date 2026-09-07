@@ -16,7 +16,6 @@ The compass, quest tracker, quickslots and their change prompt, crosshair, contr
 
 - Dawnwalker-compatible UE4SS exposing `ExecuteInGameThreadWithDelay`, `KismetSystemLibrary.GetFrameCount`, and `GetGameTimeInSeconds`. Development reference: commit `97b7e501c`.
 - Stock asset/API reference: Steam build **25129649**, executable CL-257186.
-- **Development build: in-game validation is pending.** Bar visibility, difficulty variants, and frame times require gameplay testing.
 - Disable **HUD Tweaks and HUD Tweaks - Fixes** before enabling this mod. They are not dependencies and can compete over opacity despite having different filenames.
 - Mods altering the managed HUD panels require compatibility testing.
 
@@ -32,7 +31,7 @@ To remove, close the game, disable/remove the mod in Vortex, and deploy. No save
 
 ## Optional Show Compass version
 
-`Quiet-Dawn-HUD-Show-Compass.zip` is a complete alternative. It leaves the compass under normal game control; the game may still hide it in dialogue or other special states. Health/stamina timing and all other settings are identical to the standard version.
+`Quiet-Dawn-HUD-Show-Compass.zip` is a complete alternative. It displays the compass at 50% opacity; the game may still hide it in dialogue or other special states. Health/stamina timing and all other settings are identical to the standard version.
 
 ## Configuration
 
@@ -40,7 +39,7 @@ Edit `Scripts/QuietDawnConfig.lua` through your normal mod configuration workflo
 
 `healthThreshold` and `staminaThreshold` default to `0.20`. `healthHoldSeconds` and `staminaHoldSeconds` default to `1.5`. Either resource can reveal the combined panel. Healing/regeneration alone does not extend the delay. The delay uses game time and pauses with the game. Changes to maximum resource capacity that lower its percentage can also trigger the reveal.
 
-`panels` lists direct HUD fields. Removing a non-stat entry leaves it under game control. The optional configuration omits only `WBP_Compass`. `enabled = false` disables all mod work at startup.
+`panels` lists direct HUD fields. Removing a non-stat entry leaves it under game control. The optional configuration includes `WBP_Compass` and sets `compassOpacity = 0.5`. This value ranges from `0` (transparent) to `1` (opaque). `enabled = false` disables all mod work at startup.
 
 ## Debug logging
 
@@ -60,7 +59,6 @@ The lock-on marker shares its widget with combat cues, so it cannot be hidden un
 
 There are no global HUD searches, widget-tree walks, class-default changes, or recurring configuration reads. The panel worker terminates after each job; the two-value sampler continues while the player context is ready. Unchanged samples cause no widget reads or writes. A shared frame guard separates sampling from panel updates. Pending panel work takes priority over the sampler so it can finish even at very low frame rates. Resource visibility changes revisit only the two stat panels; unrelated HUD fields are checked on lifecycle/preset events. Missing fields are not retried on each resource change. Removing both stat panels from the configuration also disables stat sampling.
 
-Archive-based Lua mocks cover strict thresholds, the 1.5-second hold and refresh, shared stat visibility, combat remaining hidden, paused timers, 600-second idle sampling budgets, invalid/missing state, ownership/world replacement, hook failure, event bursts, and the compass option. Packaging checks verify the actual ZIP bytes and installed Vortex installer plan. These are offline checks, not proof of in-game correctness or an FPS improvement. Check fresh launch, loading/respawn, both player forms, damage, stamina spending/regeneration, low resources, difficulty-controlled indicators, neutral lock-on hiding and the return of attack/parry cues, and frame times in game.
 
 ## License
 

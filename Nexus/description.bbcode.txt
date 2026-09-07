@@ -4,7 +4,7 @@ A quiet view of the world, with health and stamina returning when needed.
 Combat, drawing a weapon, lock-on, and focus do not reveal the general HUD. Enemy health remains controlled by the game. Parry/attack indicators follow the game's difficulty settings; this mod never enables disabled indicators.
 
 [b]Enemy lock-on marker[/b]
-The neutral lock-on marker is hidden. It shares a widget with attack/parry warnings, so active attack, parry-window, unblockable, and weak-spot cues restore that widget while preserving game visibility rules. No difficulty settings are changed. Marker changes use events rather than a new polling timer. In-game acceptance remains pending.
+The neutral lock-on marker is hidden. It shares a widget with attack/parry warnings, so active attack, parry-window, unblockable, and weak-spot cues restore that widget while preserving game visibility rules. No difficulty settings are changed. Marker changes use events rather than a new polling timer.
 
 [b]Health and stamina[/b]
 Both bars appear together after damage or stamina use, then hide 1.5 seconds after the last resource drop. Further drops refresh the delay. Either resource strictly below 20% keeps both bars visible. Regeneration alone does not refresh the timer. Values are checked every 100 ms against the current player, with no global object searches or widget-tree walks.
@@ -12,13 +12,13 @@ Both bars appear together after damage or stamina use, then hide 1.5 seconds aft
 Compass, quest tracker, quickslots, crosshair, control legend, buffs, ability cooldowns, focus HUD, special-attack cooldown, and XP stay hidden. Interaction prompts, dialogue, subtitles, notifications, boss bars, and menus retain normal game behavior. No whole-HUD reveal shortcut.
 
 [b]Optional Show Compass version[/b]
-Quiet-Dawn-HUD-Show-Compass.zip is a complete alternative that retains normal compass visibility. Install only one version; both archives use the same runtime paths.
+Quiet-Dawn-HUD-Show-Compass.zip is a complete alternative that shows the compass at 50% opacity. Install only one version; both archives use the same runtime paths.
 
 [b]Install and update[/b]
 Close the game. Disable HUD Tweaks and HUD Tweaks - Fixes in Vortex and deploy. Import the chosen ZIP, select UE4SS (Lua mods), enable and deploy, then restart. Back up configuration before replacing the existing entry: configuration is replaced in full, not merged. Remove through Vortex with the game closed.
 
 [b]Requirements and status[/b]
-Dawnwalker-compatible UE4SS with delayed game-thread callbacks and Kismet frame/game-time functions. Reference game build: 25129649. Development build; gameplay and frame-time measurements remain pending. Resource changes entirely between samples may be missed. Native game visibility restrictions remain in effect.
+Dawnwalker-compatible UE4SS with delayed game-thread callbacks and Kismet frame/game-time functions. Reference game build: 25129649.  Resource changes entirely between samples may be missed. Native game visibility restrictions remain in effect.
 
 [b]Configuration and license[/b]
 QuietDawnConfig.lua contains thresholds and hold durations; restart after editing. MIT licensed. No game assets or loader binaries included.

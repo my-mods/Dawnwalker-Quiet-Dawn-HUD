@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Set the optional Show Compass variant to 50 percent compass opacity.
+
 - Compare Unreal object addresses instead of Lua wrapper identity throughout HUD ownership, marker ownership, panel caching, and player-state tracking. This fixes false world mismatches that prevented initialization.
 - Separate HUD ownership acceptance from stat sampling to keep their native work on separate frames.
 
