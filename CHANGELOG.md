@@ -23,3 +23,5 @@
 - Bounded initialization and panel updates, with no permanent worker after setup.
 
 Pending development changes: add opt-in personal INI diagnostics with bounded event logging and phase summaries. Use explicitly chained one-shot callbacks so completed workers stop on the target UE4SS build; select the incoming job scope before deciding whether to sample stats.
+
+- Standardize the debug logging setting as `debugLogging`; retain existing configuration compatibility.

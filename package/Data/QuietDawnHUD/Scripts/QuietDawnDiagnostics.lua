@@ -1,6 +1,7 @@
 -- MIT License. Personal diagnostics are opt-in and read once at startup.
-local D={enabled=false}
-local settings={enabled=false,summaryseconds=10,slowcallbackms=2,maxeventspersecond=6}
+local D={debugLogging=false}
+local settings={debuglogging=false,summaryseconds=10,slowcallbackms=2,maxeventspersecond=6}
+local canonicalDebug,legacyDebug=false,false
 local base=os.getenv("LOCALAPPDATA")
 if base and (base:match("^%a:[/\\]") or base:match("^\\\\")) then
     D.path=base:gsub("[/\\]+$", "").."/Dawnwalker/Saved/Config/QuietDawnHUD.ini"
@@ -18,8 +19,11 @@ if base and (base:match("^%a:[/\\]") or base:match("^\\\\")) then
                 local key,value=line:match("^([%w_]+)%s*=%s*(.-)%s*$")
                 if section=="debug" and key then
                     key=key:lower();value=value:lower()
-                    if key=="enabled" then
-                        settings.enabled=value=="true" or value=="1" or value=="on" or value=="yes"
+                    if key=="debuglogging" then
+                        canonicalDebug=true
+                        settings.debuglogging=value=="true" or value=="1" or value=="on" or value=="yes"
+                    elseif key=="enabled" then -- legacy personal INI, canonical key wins
+                        legacyDebug=value=="true" or value=="1" or value=="on" or value=="yes"
                     elseif settings[key]~=nil then
                         local number=tonumber(value)
                         if number and number==number and number~=math.huge then settings[key]=number end
@@ -29,12 +33,13 @@ if base and (base:match("^%a:[/\\]") or base:match("^\\\\")) then
         end
     end
 end
-D.enabled=settings.enabled
+if not canonicalDebug then settings.debuglogging=legacyDebug end
+D.debugLogging=settings.debuglogging
 function D.count() end
 function D.event() end
 function D.vitals() end
 function D.wrap(_,fn) return fn end
-if not D.enabled then return D end
+if not D.debugLogging then return D end
 
 local summarySeconds=math.max(5,math.min(120,settings.summaryseconds))
 local slowMs=math.max(0.1,math.min(1000,settings.slowcallbackms))
