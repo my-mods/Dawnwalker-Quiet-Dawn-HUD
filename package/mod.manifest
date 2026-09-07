@@ -3,7 +3,7 @@
   <info>
     <name>Quiet Dawn HUD - Auto-hide HUD</name>
     <modid>QuietDawnHUD</modid>
-    <description>Quiet combat HUD with combined health/stamina reveal after resource loss for 1.5 seconds or below 20%. Native enemy health and difficulty-controlled indicators. Development build; in-game validation pending.</description>
+    <description>Quiet combat HUD with combined health/stamina reveal after resource loss for 1.5 seconds or below 20%. Native enemy health and difficulty-controlled indicators.</description>
     <author>my-mods</author>
     <version>0.0.0</version>
     <created_on>2026-09-06</created_on>

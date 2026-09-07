@@ -17,7 +17,7 @@ The compass, quest tracker, quickslots and their change prompt, crosshair, contr
 
 ## Requirements and compatibility
 
-- Dawnwalker-compatible UE4SS exposing `ExecuteInGameThreadWithDelay`, `KismetSystemLibrary.GetFrameCount`, and `GetGameTimeInSeconds`. Development reference: commit `97b7e501c`.
+- Dawnwalker-compatible UE4SS exposing `ExecuteInGameThreadWithDelay`, `CancelDelayedAction`, `KismetSystemLibrary.GetFrameCount`, and `GetGameTimeInSeconds`. Development reference: commit `97b7e501c`.
 - Stock asset/API reference: Steam build **25129649**, executable CL-257186.
 - Disable **HUD Tweaks and HUD Tweaks - Fixes** before enabling this mod. They are not dependencies and can compete over opacity despite having different filenames.
 - Mods altering the managed HUD panels require compatibility testing.
@@ -40,7 +40,7 @@ To remove, close the game, disable/remove the mod in Vortex, and deploy. No save
 
 Edit `Scripts/QuietDawnConfig.lua` through your normal mod configuration workflow and restart the game. Avoid editing a deployed hardlink directly.
 
-`healthThreshold` and `staminaThreshold` default to `0.20`. `healthHoldSeconds` and `staminaHoldSeconds` default to `1.5`. Either resource can reveal the combined panel. Healing/regeneration alone does not extend the delay. The delay uses game time and pauses with the game. Changes to maximum resource capacity that lower its percentage can also trigger the reveal.
+`healthThreshold` and `staminaThreshold` default to `0.20`. `healthHoldSeconds` and `staminaHoldSeconds` default to `1.5`. Either resource can reveal the combined panel. Healing/regeneration alone does not extend the delay. The delay uses game time and pauses with the game. A lower percentage observed on a resource or lifecycle event can also trigger the reveal.
 
 `panels` lists direct HUD fields. Removing a non-stat entry leaves it under game control. The optional configuration includes `WBP_Compass` and sets `compassOpacity = 0.5`. This value ranges from `0` (transparent) to `1` (opaque). `enabled = false` disables all mod work at startup.
 
@@ -50,17 +50,19 @@ Copy `QuietDawnHUD.ini.example` to `%LOCALAPPDATA%/Dawnwalker/Saved/Config/Quiet
 
 Messages use `[Quiet Dawn HUD][DEBUG]` in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. They report HUD visibility transitions, panel/marker writes, hook setup, unavailable state, and periodic timing/counter summaries. `SummarySeconds=10`, `SlowCallbackMs=2`, and `MaxEventsPerSecond=6` control summary frequency, slow-phase reporting, and the event output limit. Suppressed events are counted. The INI is read once; logging adds no timer or object searches. Disabled diagnostics retain the original work functions without timing wrappers.
 
-Timings use `os.clock` for Lua work phases, including their synchronous native calls. Nested phases overlap: do not sum them. These measurements are not engine frame times or proof of a stutter fix. Sample gaps use game time. For diagnosis, reproduce damage, stamina use, lock-on/cues and a save load, then inspect the log before launching another session.
+Timings use `os.clock` for Lua work phases, including their synchronous native calls. Nested phases overlap: do not sum them. These measurements are not engine frame times or proof of a stutter fix. Resource-event gaps use game time. For diagnosis, reproduce damage, stamina use, lock-on/cues and a save load, then inspect the log before launching another session.
 
 ## Behavior and performance
 
-Lifecycle and preset callbacks initialize/reapply the named panels. A bounded sampler reads the current player's health and stamina percentages every **100 ms** because the available UI callbacks do not cover every resource change. Detection can take approximately one sampling interval; panel writes follow on separate frames. A damage/use-and-recovery change entirely between samples may not be observed.
+Lifecycle and preset callbacks initialize/reapply the named panels. Health, blood, and stamina change handlers request a coalesced read of the current player's resource percentages. There is no recurring stat sampler. The stamina handler is bound by the shared HUD's vampire stats widget during initialization in both forms. Rapid loss followed by recovery still records the loss event.
 
-The sampler checks current ownership using Unreal object addresses and stops if the player context or stat readings become unavailable. Different Lua wrappers for the same object retain its cached state. Recovery occurs on subsequent HUD/player lifecycle events. Missing readings leave the stat panel under normal game visibility when possible. Reveals restore opacity; they do not override the game's visibility presets.
+A single pending hide deadline uses cached resource values and game time; it never rereads health or stamina. Further drops extend the deadline. Pausing preserves the remaining hold time: an outstanding deadline may reschedule for the remaining game-time delay. Once the hold expires, or a resource remains below its threshold, no deadline timer continues. Panel updates run on separate frames.
+
+Ownership checks use Unreal object addresses. Different Lua wrappers for the same object retain its cached state; old HUD/world events are ignored. Missing readings or unavailable resource hooks leave stat panels under normal game visibility when possible. Failed hook setup uses finite retries and can recover on a subsequent HUD/player lifecycle event. There is no polling fallback. Reveals restore opacity and retain the game's visibility presets.
 
 The lock-on marker shares its widget with combat cues, so it cannot be hidden unconditionally. The mod reads the Directional Indicator menu setting at initialization and on settings/HUD events. Enabling it restores cached markers; the widget's separate internal display toggle does not override that choice. Missing setting data leaves the widget under game control. Construction and icon-state callbacks schedule bounded updates through the existing worker. Construction events wait for HUD ownership initialization. HUD and marker ownership readiness use finite retries; exhausted HUD readiness waits for a later lifecycle event, and exhausted marker readiness waits for a later marker event. Debug logging reports readiness failures and direction-setting reads. No difficulty-setting poll or extra timer is added. A fixed 64-entry marker cache/queue bounds work; excess markers remain under normal game control until capacity becomes available.
 
-There are no global HUD searches, widget-tree walks, class-default changes, or recurring configuration reads. The panel worker terminates after each job; the two-value sampler continues while the player context is ready. Unchanged samples cause no widget reads or writes. A shared frame guard separates sampling from panel updates. Pending panel work takes priority over the sampler so it can finish even at very low frame rates. Resource visibility changes revisit only the two stat panels; unrelated HUD fields are checked on lifecycle/preset events. Missing fields are not retried on each resource change. Removing both stat panels from the configuration also disables stat sampling.
+There are no global HUD searches, widget-tree walks, class-default changes, or recurring configuration reads. The panel worker terminates after each job. Resource events that leave visibility unchanged do not revisit panels. Resource visibility changes revisit only the two stat panels; unrelated HUD fields are checked on lifecycle/preset events. Missing fields are not retried on each resource change. Removing both stat panels from the configuration disables resource hooks and reads.
 
 
 ## License

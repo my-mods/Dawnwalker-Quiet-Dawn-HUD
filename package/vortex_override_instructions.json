@@ -12,6 +12,6 @@
   {
     "type": "attribute",
     "key": "description",
-    "value": "Quiet combat HUD with combined health/stamina reveal after resource loss for 1.5 seconds or below 20%. Native enemy health and difficulty-controlled indicators. Development build; in-game validation pending."
+    "value": "Quiet combat HUD with combined health/stamina reveal after resource loss for 1.5 seconds or below 20%. Native enemy health and difficulty-controlled indicators."
   }
 ]

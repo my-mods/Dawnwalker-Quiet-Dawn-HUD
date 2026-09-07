@@ -2,7 +2,7 @@ local D = require("QuietDawnDiagnostics")
 -- Quiet Dawn HUD | MIT License
 -- Event-driven panel opacity. No widget-tree walks, global object searches,
 -- class-default edits, animation hooks, or Lua coroutines.
--- Two cached player-stat reads every 100 ms cover changes without reliable UI events.
+-- Resource reads run only on resource-change and HUD/player lifecycle events.
 local ok, config = pcall(require, "QuietDawnConfig")
 if not ok or type(config) ~= "table" then
     print("[Quiet Dawn HUD] Invalid configuration; HUD left to the game.")
@@ -50,8 +50,8 @@ local statNames = {}
 for _, name in ipairs(names) do
     if name == "HumanStats" or name == "VampireStats" then statNames[#statNames+1]=name end
 end
-if type(ExecuteInGameThreadWithDelay) ~= "function" then
-    print("[Quiet Dawn HUD] Requires delayed game-thread callbacks; disabled.")
+if type(ExecuteInGameThreadWithDelay) ~= "function" or type(CancelDelayedAction) ~= "function" then
+    print("[Quiet Dawn HUD] Requires cancellable delayed game-thread callbacks; disabled.")
     return
 end
 
@@ -59,7 +59,13 @@ if D.debugLogging then D.event("config","healthThreshold=%.3f staminaThreshold=%
 local ROOT = "/Game/_Dawnwalker/UI/_Unified/HUD/WBP_GameHUD.WBP_GameHUD_C"
 local hud, candidate, controller, world
 local hudAddress, controllerAddress
-local worker, dirty, monitoring, stateReady = false, false, false, false
+local worker, dirty, stateReady = false, false, false
+local statsPending, expiryPending = false, false
+local statsRefresh=true
+local expiryHandle,expiryDue,expiryHUD,expiryController,expiryPawn
+local healthDropped, staminaDropped = false, false
+local statHookFailures, statHookAttempt = false, 0
+local firstFailedStatHook
 local lastPawnAddress, lastCombatAddress, previousHealth, previousStamina
 local healthUntil, staminaUntil = 0, 0
 local panels = {}
@@ -68,7 +74,7 @@ local cursor, desired, attempts = 0, 1, 0
 local hooks, hookIndex = {}, 1
 local warned = false
 local frameClock, lastFrame
-local wake, startMonitor
+local wake, armExpiry
 local function valid(object)
     return object ~= nil and object:IsValid()
 end
@@ -81,6 +87,27 @@ local function unwrap(param)
     if param == nil then return nil end
     return param:get()
 end
+-- These are actual Blueprint delegate handlers, not delegate signatures.
+-- Stock OnInitialized binds VampireStats to OnStaminaChanged in both forms.
+local STAT_ROOT = "/Game/_Dawnwalker/UI/_Unified/HUD/PlayerStatPanel/"
+local function statEvent(kind, field)
+    return function(context, newParam, oldParam)
+        if #statNames==0 then return end
+        local object=unwrap(context)
+        if not valid(hud) or not valid(object) or not sameObject(hud[field],object)
+            or not valid(controller) or not sameObject(object:GetOwningPlayer(),controller)
+            or not sameObject(object:GetWorld(),world) then return end
+        local new, old=tonumber(unwrap(newParam)),tonumber(unwrap(oldParam))
+        if new and old and new==old then return end
+        -- Retain a drop even if a second event restores the value before the worker.
+        if new and old and new<old then
+            if kind=="health" then healthDropped=true else staminaDropped=true end
+        end
+        statsPending=true
+        if D.debugLogging then D.count("resourceEvents") end
+        wake("resource")
+    end
+end
 -- The game shares this widget between neutral lock-on, directions and cues.
 -- Hide neutral only when directions are disabled; never change game settings.
 local MARKER = "/Game/_Dawnwalker/UI/_Unified/Combat/WBP_CombatTargetIndicator.WBP_CombatTargetIndicator_C"
@@ -91,7 +118,6 @@ local markerHookIndex, markerHookAttempts, markerSeen = 1, 0, false
 local markerQueue, markerPending, markerFirst, markerLast = {}, {}, 1, 0
 local markerCache, markerSlots, markerCount, markerPrune = {}, {}, 0, 1
 local markerCacheWorld, markerCacheController, markerTurn
-local markerWork = 0
 -- Steam build 25129649: ERebelSetting::Game_Difficulty_CombatDirectionMarkers=71.
 -- This menu setting is distinct from the widget's internal Hide Directions flag.
 local settingsFactory, settingsObject, directionsEnabled
@@ -257,6 +283,7 @@ markerStep=D.wrap("marker",markerStep)
 markerHooksStep=D.wrap("hook",markerHooksStep)
 local function signal() if D.debugLogging then D.count("presetEvents") end;wake() end
 local function capture(context)
+    statsRefresh=true
     candidate = unwrap(context)
     wake()
 end
@@ -268,6 +295,7 @@ local specs = {
     {"/Script/Engine.PlayerController:ClientRestart", function(context)
         local pc = unwrap(context)
         if valid(pc) and pc:IsLocalController() then
+            statsRefresh=true
             controller = pc
             controllerAddress = pc:GetAddress()
             wake()
@@ -279,10 +307,20 @@ local specs = {
     {"/Script/RebelSettings.RebelGameUserSettings:SetSetting", refreshSettings, true},
     {"/Script/RebelSettings.RebelGameUserSettings:SetSettingAsBool", refreshSettings, true},
 }
+if #statNames>0 then
+    for _,entry in ipairs({
+        {"WBP_HUD_HumanStats", "On HP changed", "health", "HumanStats"},
+        {"WBP_HUD_VampireStats", "On HP changed", "health", "VampireStats"},
+        {"WBP_HUD_VampireStats", "On Stamina changed", "stamina", "VampireStats"},
+    }) do
+        specs[#specs+1]={STAT_ROOT..entry[1].."."..entry[1].."_C:"..entry[2],statEvent(entry[3],entry[4]),false,true}
+    end
+end
 local function noop() end
 local function registerOne()
     if hookIndex > #specs then return true end
     local spec = specs[hookIndex]
+    if hooks[spec[1]] then hookIndex=hookIndex+1;return hookIndex>#specs end
     local success, pre, post
     if spec[3] then
         success, pre, post = pcall(RegisterHook, spec[1], noop, spec[2])
@@ -292,7 +330,18 @@ local function registerOne()
     if success and type(pre) == "number" and type(post) == "number" then
         hooks[spec[1]] = {pre, post}
         hookIndex = hookIndex + 1
+        statHookAttempt=0
         if D.debugLogging then D.event("hook","registered=%s",spec[1]) end
+    end
+    if not success and spec[4] then
+        statHookAttempt=statHookAttempt+1
+        if statHookAttempt>=12 then
+            statHookFailures=true
+            firstFailedStatHook=firstFailedStatHook or hookIndex
+            print("[Quiet Dawn HUD] Resource event hook unavailable; stat panels left to the game: "..spec[1])
+            hookIndex=hookIndex+1
+            statHookAttempt=0
+        end
     end
     return hookIndex > #specs
 end
@@ -309,6 +358,8 @@ local function accept(object)
         hud, world, panels, absent = object, objectWorld, {}, {}
         lastPawnAddress, lastCombatAddress, previousHealth, previousStamina = nil, nil, nil, nil
         healthUntil, staminaUntil = 0, 0
+        statsRefresh=true
+        healthDropped,staminaDropped=false,false
         if D.debugLogging then D.event("lifecycle","HUD/world changed; cached state reset") end
     end
     controller = pc
@@ -316,6 +367,7 @@ local function accept(object)
     return true
 end
 local function snapshot()
+    if statHookFailures then return nil end
     if not valid(hud) or not valid(controller) or not valid(world) then return nil end
     if not sameObject(hud:GetWorld(),world) or not sameObject(controller:GetWorld(),world)
         or not sameObject(hud:GetOwningPlayer(),controller) then return nil end
@@ -335,12 +387,13 @@ local function snapshot()
         healthUntil, staminaUntil = 0, 0
         lastPawnAddress, lastCombatAddress = pawnAddress, combatAddress
     end
-    if previousHealth and health < previousHealth - 0.000001 then
+    if healthDropped or (previousHealth and health < previousHealth - 0.000001) then
         healthUntil = now + config.healthHoldSeconds
     end
-    if previousStamina and stamina < previousStamina - 0.000001 then
+    if staminaDropped or (previousStamina and stamina < previousStamina - 0.000001) then
         staminaUntil = now + config.staminaHoldSeconds
     end
+    healthDropped,staminaDropped=false,false
     previousHealth, previousStamina = health, stamina
     local needed = health < config.healthThreshold or stamina < config.staminaThreshold
         or now < healthUntil or now < staminaUntil
@@ -352,7 +405,7 @@ local function step()
     -- At most one hook registration OR one state snapshot OR one direct panel
     -- read/write per callback. 16 ms delay yields to a later game frame.
     if hookIndex <= #specs then
-        if hookIndex > 3 and candidate == nil then
+        if hookIndex > 3 and candidate == nil and not valid(hud) then
             worker=false
             return true
         end
@@ -373,32 +426,27 @@ local function step()
         settingsStep()
         return false
     end
-    -- During a large marker burst the shared worker also services vitals.
-    -- Six 16-ms marker slices plus this sample slice bound that extra cadence.
-    if markerWork>=6 and stateReady and cursor==0 and not dirty then
-        markerWork=0
+    -- Coalesce resource events; no timer requests resource reads.
+    if statsPending and candidate==nil and cursor==0 and not dirty then
+        statsPending=false
         local success,value=pcall(snapshot)
-        if not success or value==nil then
-            stateReady=false
-            desired=1
-            wake(true)
-        elseif value~=desired then
-            desired=value
-            wake(true)
-        end
+        stateReady=success and value~=nil
+        if not stateReady then healthDropped,staminaDropped=false,false end
+        local target=stateReady and value or 1
+        if target~=desired then desired=target;dirty=true end
+        armExpiry()
         return false
     end
     markerTurn=not markerTurn
     if markersReady() and (markerTurn or (cursor==0 and not dirty)) then
         local success, reason=pcall(markerStep)
-        markerWork=markerWork+1
         if not success then print("[Quiet Dawn HUD] Marker update skipped: "..tostring(reason)) end
         return false
     end
     if cursor==0 and not dirty then
         if markersReady() then return false end
         worker=false
-        if stateReady then startMonitor() end
+        armExpiry()
         return true
     end
     if cursor == 0 then
@@ -408,7 +456,7 @@ local function step()
             if accepted then
                 candidate=nil
                 dirty=true
-                return false -- ownership acceptance and stat sampling use separate frames
+                return false -- ownership acceptance and resource reads use separate frames
             else
                 attempts=attempts+1
                 if D.debugLogging then
@@ -425,15 +473,14 @@ local function step()
         end
         fullJob, fullPending = fullPending, false
         jobNames = fullJob and names or statNames
-        -- Stat-only wakes already have a fresh sampler result. Do not sample
-        -- twice or revisit unrelated HUD panels on every show/hide transition.
+        -- Resource events already supplied a fresh snapshot; only lifecycle jobs read again.
         if fullJob then
-            markerWork=0
-            if #statNames > 0 then
+            if #statNames > 0 and statsRefresh then
+                statsRefresh=false
                 local success, value = pcall(snapshot)
                 stateReady = success and value ~= nil
                 desired = stateReady and value or 1
-            else
+            elseif #statNames==0 then
                 stateReady, desired = false, 0
             end
         end
@@ -479,11 +526,11 @@ local function step()
         return false
     end
     cursor=0
-    if dirty or markersReady() then return false end
+    if dirty or statsPending or markersReady() then return false end
     attempts=0
     worker=false
-    if stateReady then startMonitor() end
-    return true -- the panel worker stops; only the bounded stat sampler remains
+    armExpiry()
+    return true -- the panel worker stops; no recurring resource worker remains
 end
 step=D.wrap("worker",step)
 -- UE4SS repeating timers ignore return values. Chain one-shots explicitly.
@@ -495,11 +542,17 @@ local function repeatUntilDone(delay,fn)
 end
 wake = function(statsOnly)
     if not statsOnly then
+        if firstFailedStatHook then
+            hookIndex=firstFailedStatHook
+            firstFailedStatHook=nil
+            statHookFailures=false
+            statsRefresh=true
+        end
         fullPending=true
         absent={}
         settingsPending,settingsAttempts=true,0
     end
-    if statsOnly~="marker" and statsOnly~="settings" then dirty=true end
+    if statsOnly~="marker" and statsOnly~="settings" and statsOnly~="resource" then dirty=true end
     if worker then if D.debugLogging then D.count("workerCoalesced") end; return end
     worker=true
     if D.debugLogging then D.count("workerStarts") end
@@ -544,44 +597,38 @@ end)
 if not markerSubscribed then
     print("[Quiet Dawn HUD] Marker lifecycle notification unavailable; marker left to the game.")
 end
--- One sampler, only after successful ownership/stat initialization. It reads two
--- scalar values every 100 ms. It never searches for objects or retries readiness.
--- Visibility changes wake the panel worker; unchanged values cause no widget work.
-startMonitor = function()
-    if monitoring then return end
-    monitoring=true
-    local ownedHUD, ownedController = hudAddress, controllerAddress
-    repeatUntilDone(100, function()
-        -- At low frame rates both timers may expire on every frame. Let a
-        -- pending panel job finish rather than letting the sampler starve it.
-        if worker then if D.debugLogging then D.count("sampleDeferred") end; return false end
-        -- These are captured native identities; snapshot revalidates live owners.
-        if hudAddress~=ownedHUD or controllerAddress~=ownedController then
-            monitoring=false
-            wake()
-            return true
+-- At most one outstanding hide deadline. It reads cached percentages and the
+-- game clock only. A pause/extended hold reschedules its remaining delay; once
+-- settled or below threshold there is no timer and no resource polling.
+armExpiry = function()
+    local now=valid(frameClock) and valid(controller) and frameClock:GetGameTimeInSeconds(controller) or nil
+    local eligible=now and stateReady and previousHealth and previousStamina
+        and previousHealth>=config.healthThreshold and previousStamina>=config.staminaThreshold
+    local remaining=eligible and math.max(healthUntil,staminaUntil)-now or 0
+    if expiryPending then
+        local sameOwner=expiryHUD==hudAddress and expiryController==controllerAddress and expiryPawn==lastPawnAddress
+        if remaining>0 and sameOwner and expiryDue<=now+remaining then return end
+        CancelDelayedAction(expiryHandle)
+        expiryPending,expiryHandle=false,nil
+    end
+    if remaining<=0 then return end
+    expiryPending=true
+    expiryDue=now+remaining
+    local ownedHUD,ownedController,ownedPawn=hudAddress,controllerAddress,lastPawnAddress
+    expiryHUD,expiryController,expiryPawn=ownedHUD,ownedController,ownedPawn
+    expiryHandle=ExecuteInGameThreadWithDelay(math.max(16,math.ceil(remaining*1000)),function()
+        expiryPending,expiryHandle=false,nil
+        if ownedHUD~=hudAddress or ownedController~=controllerAddress or ownedPawn~=lastPawnAddress then
+            armExpiry()
+            return
         end
-        local success, value = pcall(function()
-            if not valid(frameClock) then return nil end
-            local frame=frameClock:GetFrameCount()
-            if frame == lastFrame then return "deferred" end
-            lastFrame=frame
-            return snapshot()
-        end)
-        if value == "deferred" then return false end
-        if not success or value == nil then
-            monitoring=false
-            stateReady=false
-            if D.debugLogging then D.event("lifecycle","sampler stopped: player/stat context unavailable") end
-            desired=1 -- leave the stat panel available if reading it fails
-            wake()
-            return true
-        end
-        if desired ~= value then
-            desired=value
-            wake(true)
-        end
-        return false
+        if not valid(hud) or not valid(controller) or not valid(frameClock)
+            or not sameObject(hud:GetWorld(),world) or not sameObject(hud:GetOwningPlayer(),controller) then return end
+        if not stateReady or not previousHealth or not previousStamina then return end
+        if previousHealth<config.healthThreshold or previousStamina<config.staminaThreshold then return end
+        local remaining=math.max(healthUntil,staminaUntil)-frameClock:GetGameTimeInSeconds(controller)
+        if remaining>0 then armExpiry();return end
+        if desired~=0 then desired=0;wake(true) end
     end)
 end
 wake()

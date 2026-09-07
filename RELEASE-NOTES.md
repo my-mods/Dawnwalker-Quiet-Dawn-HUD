@@ -1,5 +1,7 @@
 # Quiet Dawn HUD - Auto-hide HUD
 
+Health and stamina now respond to resource-change events without recurring stat checks. A cached-state deadline preserves the hide delay and rapid loss/recovery events.
+
 The optional Show Compass variant displays the compass at 50% opacity. Standard and optional variants share the same HUD behavior and runtime code.
 
 Combat, weapon draw, lock-on, and focus keep the general HUD hidden. Health and stamina appear together after either resource drops and hide 1.5 seconds after the last drop, unless either value is strictly below 20%.
