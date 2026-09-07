@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Compare Unreal object addresses instead of Lua wrapper identity throughout HUD ownership, marker ownership, panel caching, and player-state tracking. This fixes false world mismatches that prevented initialization.
+- Separate HUD ownership acceptance from stat sampling to keep their native work on separate frames.
+
 - Fix HUD ownership retries stopping after the first unsuccessful attempt, leaving HUD and neutral marker hiding uninitialized.
 - Retain early marker construction events until HUD initialization and retry delayed marker ownership with a finite budget. Add readiness diagnostics; preserve combat cues and difficulty rules.
 

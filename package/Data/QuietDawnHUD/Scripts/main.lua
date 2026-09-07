@@ -53,8 +53,9 @@ end
 if D.debugLogging then D.event("config","healthThreshold=%.3f staminaThreshold=%.3f healthHold=%.3fs staminaHold=%.3fs panels=%d",config.healthThreshold,config.staminaThreshold,config.healthHoldSeconds,config.staminaHoldSeconds,#names) end
 local ROOT = "/Game/_Dawnwalker/UI/_Unified/HUD/WBP_GameHUD.WBP_GameHUD_C"
 local hud, candidate, controller, world
+local hudAddress, controllerAddress
 local worker, dirty, monitoring, stateReady = false, false, false, false
-local lastPawn, lastCombat, previousHealth, previousStamina
+local lastPawnAddress, lastCombatAddress, previousHealth, previousStamina
 local healthUntil, staminaUntil = 0, 0
 local panels = {}
 local absent, jobNames, fullPending, fullJob = {}, names, false, true
@@ -65,6 +66,11 @@ local frameClock, lastFrame
 local wake, startMonitor
 local function valid(object)
     return object ~= nil and object:IsValid()
+end
+local function sameObject(left, right)
+    -- Reflected calls can return different Lua wrappers for the same UObject.
+    -- Revalidate both objects; compare native identity, never wrapper identity.
+    return valid(left) and valid(right) and left:GetAddress()==right:GetAddress()
 end
 local function unwrap(param)
     if param == nil then return nil end
@@ -134,12 +140,12 @@ local function markerStep()
         if job.retries<119 then queueMarker(object,job.retries+1) end
         return
     end
-    if objectWorld~=world or owner~=controller then
+    if not sameObject(objectWorld,world) or not sameObject(owner,controller) then
         if D.debugLogging then D.count("markerForeignOwner") end
         return
     end
-    if controller:GetWorld()~=world then return end
-    if markerCacheWorld~=world or markerCacheController~=controller then
+    if not sameObject(controller:GetWorld(),world) then return end
+    if not sameObject(markerCacheWorld,world) or not sameObject(markerCacheController,controller) then
         markerCache,markerSlots,markerCount,markerPrune={}, {}, 0, 1
         markerCacheWorld,markerCacheController=world,controller
     end
@@ -210,6 +216,7 @@ local specs = {
         local pc = unwrap(context)
         if valid(pc) and pc:IsLocalController() then
             controller = pc
+            controllerAddress = pc:GetAddress()
             wake()
         end
     end, true},
@@ -241,23 +248,24 @@ local function accept(object)
     if not valid(pc) then return false, "missing owning player" end
     if not pc:IsLocalController() then return false, "non-local owning player" end
     local objectWorld = object:GetWorld()
-    if not valid(objectWorld) or objectWorld ~= pc:GetWorld() then return false, "world mismatch" end
-    if valid(controller) and controller ~= pc then return false, "controller mismatch" end
-    if object ~= hud or objectWorld ~= world then
+    if not sameObject(objectWorld,pc:GetWorld()) then return false, "world mismatch" end
+    if valid(controller) and not sameObject(controller,pc) then return false, "controller mismatch" end
+    if not sameObject(object,hud) or not sameObject(objectWorld,world) then
         hud, world, panels, absent = object, objectWorld, {}, {}
-        lastPawn, lastCombat, previousHealth, previousStamina = nil, nil, nil, nil
+        lastPawnAddress, lastCombatAddress, previousHealth, previousStamina = nil, nil, nil, nil
         healthUntil, staminaUntil = 0, 0
         if D.debugLogging then D.event("lifecycle","HUD/world changed; cached state reset") end
     end
     controller = pc
+    hudAddress, controllerAddress = object:GetAddress(), pc:GetAddress()
     return true
 end
 local function snapshot()
     if not valid(hud) or not valid(controller) or not valid(world) then return nil end
-    if hud:GetWorld() ~= world or controller:GetWorld() ~= world
-        or hud:GetOwningPlayer() ~= controller then return nil end
+    if not sameObject(hud:GetWorld(),world) or not sameObject(controller:GetWorld(),world)
+        or not sameObject(hud:GetOwningPlayer(),controller) then return nil end
     local pawn = controller.Pawn
-    if not valid(pawn) or pawn:GetWorld() ~= world then return nil end
+    if not valid(pawn) or not sameObject(pawn:GetWorld(),world) then return nil end
     local combat = pawn.CombatComponent
     if not valid(combat) then return nil end
     -- No component search, arrays, or borrowed attribute structures.
@@ -266,10 +274,11 @@ local function snapshot()
     if not health or not stamina or health ~= health or stamina ~= stamina
         or health < 0 or stamina < 0 or health > 1 or stamina > 1 then return nil end
     local now = frameClock:GetGameTimeInSeconds(controller)
-    if lastPawn ~= pawn or lastCombat ~= combat then
+    local pawnAddress, combatAddress=pawn:GetAddress(), combat:GetAddress()
+    if lastPawnAddress~=pawnAddress or lastCombatAddress~=combatAddress then
         previousHealth, previousStamina = nil, nil
         healthUntil, staminaUntil = 0, 0
-        lastPawn, lastCombat = pawn, combat
+        lastPawnAddress, lastCombatAddress = pawnAddress, combatAddress
     end
     if previousHealth and health < previousHealth - 0.000001 then
         healthUntil = now + config.healthHoldSeconds
@@ -337,7 +346,11 @@ local function step()
         dirty = false
         if candidate then
             local accepted, reason=accept(candidate)
-            if accepted then candidate=nil else
+            if accepted then
+                candidate=nil
+                dirty=true
+                return false -- ownership acceptance and stat sampling use separate frames
+            else
                 attempts=attempts+1
                 if D.debugLogging then
                     D.count("hudNotReady")
@@ -371,15 +384,15 @@ local function step()
     if cursor <= #jobNames then
         -- Revalidate ownership inside every deferred operation, including a still
         -- valid HUD left over from the previous world.
-        if valid(hud) and valid(controller) and hud:GetWorld() == world
-            and controller:GetWorld() == world and hud:GetOwningPlayer() == controller then
+        if valid(hud) and valid(controller) and sameObject(hud:GetWorld(),world)
+            and sameObject(controller:GetWorld(),world) and sameObject(hud:GetOwningPlayer(),controller) then
             local name = jobNames[cursor]
             if absent[name] then cursor=cursor+1; return false end
             local object = hud[name]
             if valid(object) then
                 local current = object:GetRenderOpacity()
                 local entry = panels[name]
-                if not entry or entry.object ~= object then
+                if not entry or not sameObject(entry.object,object) then
                     entry = {object=object, original=current}
                     panels[name]=entry
                 end
@@ -400,6 +413,7 @@ local function step()
             end
         else
             hud, world, panels = nil, nil, {}
+            hudAddress=nil
         end
         cursor=cursor+1
         return false
@@ -475,12 +489,13 @@ end
 startMonitor = function()
     if monitoring then return end
     monitoring=true
-    local ownedHUD, ownedController = hud, controller
+    local ownedHUD, ownedController = hudAddress, controllerAddress
     repeatUntilDone(100, function()
         -- At low frame rates both timers may expire on every frame. Let a
         -- pending panel job finish rather than letting the sampler starve it.
         if worker then if D.debugLogging then D.count("sampleDeferred") end; return false end
-        if hud ~= ownedHUD or controller ~= ownedController then
+        -- These are captured native identities; snapshot revalidates live owners.
+        if hudAddress~=ownedHUD or controllerAddress~=ownedController then
             monitoring=false
             wake()
             return true
