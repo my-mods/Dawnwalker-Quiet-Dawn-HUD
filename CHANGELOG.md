@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Restore the shared marker/directional widget when directional indicators are enabled, including after changing the setting during play. Hide the neutral marker only while directions are disabled; preserve active combat cues.
+
 - Set the optional Show Compass variant to 50 percent compass opacity.
 
 - Compare Unreal object addresses instead of Lua wrapper identity throughout HUD ownership, marker ownership, panel caching, and player-state tracking. This fixes false world mismatches that prevented initialization.

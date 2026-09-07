@@ -81,11 +81,12 @@ local function unwrap(param)
     if param == nil then return nil end
     return param:get()
 end
--- The game uses one widget for neutral lock-on and combat cues. Never hide it
--- during a non-neutral/unknown icon state, and never change difficulty settings.
+-- The game shares this widget between neutral lock-on, directions and cues.
+-- Hide neutral only when directions are disabled; never change game settings.
 local MARKER = "/Game/_Dawnwalker/UI/_Unified/Combat/WBP_CombatTargetIndicator.WBP_CombatTargetIndicator_C"
 local markerSpecs = {"Construct", "OnObservedStubIconTypeChanged",
-    "NotifyIndicatorCleared", "EnableHardLock", "RefreshIndicatorsVisibility"}
+    "NotifyIndicatorCleared", "EnableHardLock", "RefreshIndicatorsVisibility",
+    "ToggleShowOnlyMiddleIndicator"}
 local markerHookIndex, markerHookAttempts, markerSeen = 1, 0, false
 local markerQueue, markerPending, markerFirst, markerLast = {}, {}, 1, 0
 local markerCache, markerSlots, markerCount, markerPrune = {}, {}, 0, 1
@@ -171,8 +172,12 @@ local function markerStep()
     end
     -- This Blueprint property is updated by the game's directional and
     -- non-directional display paths. 0=Defending (neutral); 1..13 are cues.
-    local readable,icon=pcall(function() return tonumber(object["Currently Displayed Icon Type"]) end)
-    if not readable or icon==nil then
+    -- GetShowsOnlyMiddleIndicator returns this Blueprint boolean. Its toggle
+    -- does not require an icon-state change, so it has its own post-hook above.
+    local readable,icon,hideDirections=pcall(function()
+        return tonumber(object["Currently Displayed Icon Type"]),object["Hide Directions"]
+    end)
+    if not readable or icon==nil or type(hideDirections)~="boolean" then
         if entry and entry.hidden then
             object:SetRenderOpacity(entry.original)
             entry.hidden=false
@@ -188,7 +193,7 @@ local function markerStep()
         for slot=1,64 do if not markerSlots[slot] then markerSlots[slot]=entry;break end end
         markerCount=markerCount+1
     end
-    if icon==0 then
+    if icon==0 and hideDirections then
         if not entry.hidden or current~=0 then entry.original=current end
         if current~=0 then
             object:SetRenderOpacity(0)

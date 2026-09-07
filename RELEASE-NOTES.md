@@ -4,7 +4,7 @@ The optional Show Compass variant displays the compass at 50% opacity. Standard 
 
 Combat, weapon draw, lock-on, and focus keep the general HUD hidden. Health and stamina appear together after either resource drops and hide 1.5 seconds after the last drop, unless either value is strictly below 20%.
 
-The neutral enemy lock-on marker hides while active attack, parry-window, unblockable, and weak-spot cues retain game visibility rules. Enemy health remains unchanged.
+The neutral enemy lock-on marker hides when directional indicators are disabled. Enabling directions restores the shared widget immediately after the setting change is processed. Active attack, parry-window, unblockable, and weak-spot cues retain game visibility rules. Enemy health remains unchanged.
 
 Object-address comparisons correct false world mismatches during HUD initialization. Bounded readiness retries retain early marker events until player ownership is ready. Resource updates touch only the stat panels, and pending panel updates take priority over sampling at low frame rates.
 

@@ -4,7 +4,7 @@ A quiet view of the world, with health and stamina returning when needed.
 Combat, drawing a weapon, lock-on, and focus do not reveal the general HUD. Enemy health remains controlled by the game. Parry/attack indicators follow the game's difficulty settings; this mod never enables disabled indicators.
 
 [b]Enemy lock-on marker[/b]
-The neutral lock-on marker is hidden. It shares a widget with attack/parry warnings, so active attack, parry-window, unblockable, and weak-spot cues restore that widget while preserving game visibility rules. No difficulty settings are changed. Marker changes use events rather than a new polling timer.
+The neutral lock-on marker is hidden when directional indicators are disabled. Enabling directional indicators restores the shared widget, including its neutral directional display. It shares a widget with attack/parry warnings, so active attack, parry-window, unblockable, and weak-spot cues restore that widget while preserving game visibility rules. No difficulty settings are changed. Marker changes use events rather than a new polling timer.
 
 [b]Health and stamina[/b]
 Both bars appear together after damage or stamina use, then hide 1.5 seconds after the last resource drop. Further drops refresh the delay. Either resource strictly below 20% keeps both bars visible. Regeneration alone does not refresh the timer. Values are checked every 100 ms against the current player, with no global object searches or widget-tree walks.
