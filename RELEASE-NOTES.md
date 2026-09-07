@@ -9,3 +9,5 @@ The neutral enemy lock-on marker hides when directional indicators are disabled.
 Object-address comparisons correct false world mismatches during HUD initialization. Bounded readiness retries retain early marker events until player ownership is ready. Resource updates touch only the stat panels, and pending panel updates take priority over sampling at low frame rates.
 
 Optional personal INI diagnostics use the debugLogging setting and report visibility changes and bounded timing summaries. Completed workers stop through explicitly chained one-shot callbacks.
+
+Directional indicator restoration now follows the actual menu setting and refreshes cached markers on setting changes. The widget's internal display toggle no longer overrides the menu choice.

@@ -92,6 +92,10 @@ local markerQueue, markerPending, markerFirst, markerLast = {}, {}, 1, 0
 local markerCache, markerSlots, markerCount, markerPrune = {}, {}, 0, 1
 local markerCacheWorld, markerCacheController, markerTurn
 local markerWork = 0
+-- Steam build 25129649: ERebelSetting::Game_Difficulty_CombatDirectionMarkers=71.
+-- This menu setting is distinct from the widget's internal Hide Directions flag.
+local settingsFactory, settingsObject, directionsEnabled
+local settingsPending, settingsAttempts = true, 0
 local function markersReady()
     -- Keep construction events queued until HUD ownership has been accepted.
     -- Missing HUD readiness sleeps until a lifecycle event, without polling.
@@ -114,6 +118,45 @@ end
 local function markerEvent(context)
     queueMarker(unwrap(context))
 end
+local function refreshSettings(context, setting)
+    if setting and tonumber(unwrap(setting))~=71 then return end
+    settingsObject=unwrap(context)
+    settingsPending,settingsAttempts=true,0
+    wake("settings")
+end
+local function settingsStep()
+    settingsAttempts=settingsAttempts+1
+    local success,value=pcall(function()
+        if not valid(settingsFactory) then
+            settingsFactory=StaticFindObject("/Script/RebelSettings.Default__RebelGameUserSettings")
+            return nil
+        end
+        if not valid(settingsObject) then
+            settingsObject=settingsFactory:Get()
+            return nil
+        end
+        local out={}
+        local found=settingsObject:GetSettingAsBool(71,out)
+        if found and type(out.OutSettingBool)=="boolean" then return out.OutSettingBool end
+    end)
+    if success and type(value)=="boolean" then
+        settingsPending=false
+        if D.debugLogging then D.count(value and "directionReadsEnabled" or "directionReadsDisabled") end
+    elseif settingsAttempts<8 then
+        return
+    else
+        value=nil
+        settingsPending=false
+        if D.debugLogging then D.count("directionReadFailures") end
+    end
+    if directionsEnabled~=value then
+        directionsEnabled=value
+        -- Fixed-size plain Lua cache traversal; native work stays in marker slices.
+        for _,entry in pairs(markerCache) do queueMarker(entry.object) end
+    end
+    if D.debugLogging then D.event("directions","menuEnabled=%s readSuccess=%s attempts=%d",tostring(value),tostring(success),settingsAttempts) end
+end
+settingsStep=D.wrap("directions",settingsStep)
 local function markerHooksStep()
     local path=MARKER..":"..markerSpecs[markerHookIndex]
     local success, pre, post=pcall(RegisterHook, path, markerEvent)
@@ -172,19 +215,9 @@ local function markerStep()
     end
     -- This Blueprint property is updated by the game's directional and
     -- non-directional display paths. 0=Defending (neutral); 1..13 are cues.
-    -- GetShowsOnlyMiddleIndicator returns this Blueprint boolean. Its toggle
-    -- does not require an icon-state change, so it has its own post-hook above.
-    local readable,icon,hideDirections=pcall(function()
-        return tonumber(object["Currently Displayed Icon Type"]),object["Hide Directions"]
-    end)
-    if not readable or icon==nil or type(hideDirections)~="boolean" then
-        if entry and entry.hidden then
-            object:SetRenderOpacity(entry.original)
-            entry.hidden=false
-        end
-        if job.retries<8 then queueMarker(object,job.retries+1) end
-        return
-    end
+    -- Preserve the entire widget whenever the actual menu option enables cues.
+    -- Unknown settings fail open so an unreadable option cannot suppress them.
+    local readable,icon=pcall(function() return tonumber(object["Currently Displayed Icon Type"]) end)
     local current=object:GetRenderOpacity()
     if not entry then
         entry={object=object,address=job.address,original=current}
@@ -193,7 +226,17 @@ local function markerStep()
         for slot=1,64 do if not markerSlots[slot] then markerSlots[slot]=entry;break end end
         markerCount=markerCount+1
     end
-    if icon==0 and hideDirections then
+    -- Retain the marker even when settings are unavailable, so a later
+    -- successful settings event can revisit it without global discovery.
+    if not readable or icon==nil or directionsEnabled==nil then
+        if entry.hidden then
+            object:SetRenderOpacity(entry.original)
+            entry.hidden=false
+        end
+        if job.retries<8 then queueMarker(object,job.retries+1) end
+        return
+    end
+    if icon==0 and not directionsEnabled then
         if not entry.hidden or current~=0 then entry.original=current end
         if current~=0 then
             object:SetRenderOpacity(0)
@@ -233,6 +276,8 @@ local specs = {
     {ROOT..":Construct", capture},
     {ROOT..":BP_OnActivated", capture},
     {ROOT..":On Coen Form Changed", capture},
+    {"/Script/RebelSettings.RebelGameUserSettings:SetSetting", refreshSettings, true},
+    {"/Script/RebelSettings.RebelGameUserSettings:SetSettingAsBool", refreshSettings, true},
 }
 local function noop() end
 local function registerOne()
@@ -322,6 +367,10 @@ local function step()
     end
     if markerSeen and markerHookIndex<=#markerSpecs and markerHookAttempts<12 then
         markerHooksStep()
+        return false
+    end
+    if settingsPending and markerSeen then
+        settingsStep()
         return false
     end
     -- During a large marker burst the shared worker also services vitals.
@@ -448,8 +497,9 @@ wake = function(statsOnly)
     if not statsOnly then
         fullPending=true
         absent={}
+        settingsPending,settingsAttempts=true,0
     end
-    if statsOnly~="marker" then dirty=true end
+    if statsOnly~="marker" and statsOnly~="settings" then dirty=true end
     if worker then if D.debugLogging then D.count("workerCoalesced") end; return end
     worker=true
     if D.debugLogging then D.count("workerStarts") end
