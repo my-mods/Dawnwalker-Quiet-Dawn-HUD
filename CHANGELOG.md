@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Reduce resource show/hide updates to the two stat panels; reuse the sampler result and cache missing fields until lifecycle/preset changes.
+- Prevent low-frame-rate sampler callbacks from starving pending panel updates.
+- Stop stat sampling entirely when neither stat panel is configured.
+
 - Keep general HUD hidden during combat, weapon draw, lock-on, and focus.
 - Reveal the combined health/stamina panel after either resource drops for 1.5 seconds, or while either remains strictly below 20%.
 - Preserve native enemy health and difficulty-controlled parry/attack indicators.

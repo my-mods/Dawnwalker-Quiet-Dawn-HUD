@@ -40,6 +40,10 @@ for _, key in ipairs({"healthHoldSeconds", "staminaHoldSeconds"}) do
     end
 end
 if not config.enabled or #names == 0 then return end
+local statNames = {}
+for _, name in ipairs(names) do
+    if name == "HumanStats" or name == "VampireStats" then statNames[#statNames+1]=name end
+end
 if type(LoopInGameThreadWithDelay) ~= "function" then
     print("[Quiet Dawn HUD] Requires delayed game-thread callbacks; disabled.")
     return
@@ -51,6 +55,7 @@ local worker, dirty, monitoring, stateReady = false, false, false, false
 local lastPawn, lastCombat, previousHealth, previousStamina
 local healthUntil, staminaUntil = 0, 0
 local panels = {}
+local absent, jobNames, fullPending, fullJob = {}, names, false, true
 local cursor, desired, attempts = 0, 1, 0
 local hooks, hookIndex = {}, 1
 local warned = false
@@ -108,7 +113,7 @@ local function accept(object)
     if not valid(objectWorld) or objectWorld ~= pc:GetWorld() then return false end
     if valid(controller) and controller ~= pc then return false end
     if object ~= hud or objectWorld ~= world then
-        hud, world, panels = object, objectWorld, {}
+        hud, world, panels, absent = object, objectWorld, {}, {}
         lastPawn, lastCombat, previousHealth, previousStamina = nil, nil, nil, nil
         healthUntil, staminaUntil = 0, 0
     end
@@ -171,18 +176,29 @@ local function step()
                 candidate=nil
             end
         end
-        local success, value = pcall(snapshot)
-        stateReady = success and value ~= nil
-        desired = stateReady and value or 1
+        -- Stat-only wakes already have a fresh sampler result. Do not sample
+        -- twice or revisit unrelated HUD panels on every show/hide transition.
+        if fullJob then
+            if #statNames > 0 then
+                local success, value = pcall(snapshot)
+                stateReady = success and value ~= nil
+                desired = stateReady and value or 1
+            else
+                stateReady, desired = false, 0
+            end
+        end
+        fullJob, fullPending = fullPending, false
+        jobNames = fullJob and names or statNames
         cursor=1
         return false
     end
-    if cursor <= #names then
+    if cursor <= #jobNames then
         -- Revalidate ownership inside every deferred operation, including a still
         -- valid HUD left over from the previous world.
         if valid(hud) and valid(controller) and hud:GetWorld() == world
             and controller:GetWorld() == world and hud:GetOwningPlayer() == controller then
-            local name = names[cursor]
+            local name = jobNames[cursor]
+            if absent[name] then cursor=cursor+1; return false end
             local object = hud[name]
             if valid(object) then
                 local current = object:GetRenderOpacity()
@@ -197,6 +213,10 @@ local function step()
             elseif attempts < 120 then
                 attempts=attempts+1
                 return false
+            else
+                -- Missing fields stay absent until a lifecycle/preset event.
+                -- Resource changes must not restart readiness retries.
+                absent[name]=true
             end
         else
             hud, world, panels = nil, nil, {}
@@ -211,7 +231,11 @@ local function step()
     if stateReady then startMonitor() end
     return true -- the panel worker stops; only the bounded stat sampler remains
 end
-wake = function()
+wake = function(statsOnly)
+    if not statsOnly then
+        fullPending=true
+        absent={}
+    end
     dirty=true
     if worker then return end
     worker=true
@@ -256,6 +280,9 @@ startMonitor = function()
     monitoring=true
     local ownedHUD, ownedController = hud, controller
     LoopInGameThreadWithDelay(100, function()
+        -- At low frame rates both timers may expire on every frame. Let a
+        -- pending panel job finish rather than letting the sampler starve it.
+        if worker then return false end
         if hud ~= ownedHUD or controller ~= ownedController then
             monitoring=false
             wake()
@@ -278,7 +305,7 @@ startMonitor = function()
         end
         if desired ~= value then
             desired=value
-            wake()
+            wake(true)
         end
         return false
     end)
