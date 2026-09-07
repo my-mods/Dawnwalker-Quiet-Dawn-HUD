@@ -1,52 +1,59 @@
 OPTIONAL SHOW COMPASS VERSION
-This is a complete alternative package. Install only one version.
+Complete alternative; install only one version.
 
 # Quiet Dawn HUD - Auto-hide HUD
 
-A quiet view of the world, with the essentials returning when you need them.
+A quiet view of the world, with health and stamina returning when needed.
 
-Quiet Dawn HUD - Auto-hide HUD is a standalone HUD mod for **The Blood of Dawnwalker**. Health/stamina panels, compass, quest tracker, quickslots, and crosshair are hidden by default. HUD preset and focus events refresh their visibility for combat, drawn weapons, lock-on, and focus. **F8** toggles a persistent manual reveal.
+For **The Blood of Dawnwalker**. Combat, drawing a weapon, lock-on, and focus no longer reveal the general HUD.
 
-Interaction prompts, dialogue, subtitles, notifications, boss bars, ability panels, and menus retain their normal game behavior. Revealing a panel restores its original opacity; it does not force the game to display a panel that its current HUD preset has hidden.
+- **Enemy health:** normal game behavior, always exempt from this mod's hiding.
+- **Player health and stamina:** shown together when either value drops, or either is strictly below **20%**.
+- **Hide delay:** **1.5 seconds** after the last damage or stamina drop. Further drops restart the relevant delay. Either value below 20% keeps the panel visible; exactly 20% does not qualify by itself.
+- **Parry/attack indicators:** normal game behavior, including difficulty restrictions. This mod never enables disabled indicators.
+
+The compass, quest tracker, quickslots and their change prompt, crosshair, control legend, buffs, ability cooldowns, focus panel/charge, special-attack cooldown, and XP bar stay hidden. Interaction prompts, dialogue, subtitles, notifications, boss bars, and menus retain their game behavior. There is no manual whole-HUD reveal shortcut.
 
 ## Requirements and compatibility
 
-- A Dawnwalker-compatible UE4SS build exposing `LoopInGameThreadWithDelay` and `KismetSystemLibrary.GetFrameCount`. Development reference: UE4SS commit `97b7e501c`.
-- Game asset reference: Steam build **25129649**, executable CL-257186.
-- **Development build: in-game validation is pending.** Event coverage, visibility transitions, and frame times have not yet been measured in the game.
-- Disable **HUD Tweaks and HUD Tweaks - Fixes** before enabling this mod. Different filenames do not prevent competing runtime opacity changes. Neither is a dependency.
-- Other mods that change the managed panels or the HUD Blueprint require compatibility testing.
+- Dawnwalker-compatible UE4SS exposing `LoopInGameThreadWithDelay`, `KismetSystemLibrary.GetFrameCount`, and `GetGameTimeInSeconds`. Development reference: commit `97b7e501c`.
+- Stock asset/API reference: Steam build **25129649**, executable CL-257186.
+- **Development build: in-game validation is pending.** Bar visibility, difficulty variants, and frame times require gameplay testing.
+- Disable **HUD Tweaks and HUD Tweaks - Fixes** before enabling this mod. They are not dependencies and can compete over opacity despite having different filenames.
+- Mods altering the managed HUD panels require compatibility testing.
 
 ## Install, update, and remove
 
-1. Close the game. In Vortex, disable HUD Tweaks and its Fixes submod, then deploy.
-2. Import `Quiet-Dawn-HUD.zip` (standard) or `Quiet-Dawn-HUD-Show-Compass.zip` (optional Show Compass version), enable it, and deploy. The installer must select **UE4SS (Lua mods)**.
-3. The payload belongs under `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/`. Start the game normally; live Lua reload is not supported.
+1. Close the game. Disable HUD Tweaks and its Fixes submod in Vortex and deploy.
+2. Import `Quiet-Dawn-HUD.zip` or the optional `Quiet-Dawn-HUD-Show-Compass.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.
+3. Runtime files belong under `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/`. Restart the game; live Lua reload is not supported.
 
-For updates, back up any configuration changes and replace the existing Quiet Dawn HUD - Auto-hide HUD entry using the same ZIP filename. The shipped configuration is a full replacement, not an automatic merge. If Vortex chose an incorrect layout, remove/reinstall the archive through its installer; redeployment alone preserves the incorrect layout.
+Install **one version only**. Both archives use the same internal ID and runtime paths. Back up configuration before replacing your existing Vortex entry: the shipped configuration is a full replacement, not an automatic merge. To switch variants, disable/remove the old entry and deploy before importing and enabling the other archive. If the installer selected an incorrect layout, reinstall through the installer; redeployment alone preserves it.
 
-To uninstall, close the game, disable/remove Quiet Dawn HUD - Auto-hide HUD in Vortex, and deploy. You can then re-enable your previous HUD mods. No save-game changes are made.
+To remove, close the game, disable/remove the mod in Vortex, and deploy. No save-game data is changed.
 
 ## Optional Show Compass version
 
-`Quiet-Dawn-HUD-Show-Compass.zip` is a complete alternative package. It leaves the compass under normal game control while the other five panels still auto-hide. The compass stays available during exploration; the game can still hide it in menus, dialogue, or other special states.
-
-Install **one version only**. Both versions use the same internal mod ID and runtime paths. To switch, close the game, back up your configuration, disable/remove the previous entry in Vortex and deploy, then import the other ZIP, enable it, and deploy. Do not keep both enabled or set conflict winners between them.
+`Quiet-Dawn-HUD-Show-Compass.zip` is a complete alternative. It leaves the compass under normal game control; the game may still hide it in dialogue or other special states. Health/stamina timing and all other settings are identical to the standard version.
 
 ## Configuration
 
-Edit `Scripts/QuietDawnConfig.lua` through your normal mod configuration workflow, then restart the game. Do not edit a deployed hardlink directly.
+Edit `Scripts/QuietDawnConfig.lua` through your normal mod configuration workflow and restart the game. Avoid editing a deployed hardlink directly.
 
-The standard configuration lists six managed panels; Show Compass lists five and omits `WBP_Compass`. Remove an entry to leave that panel under game control. `showWeaponDrawn`, `showInFocus`, and `showLockedOn` control those reveal conditions. Combat also reveals the panels when the current world's combat subsystem is available. `manualRevealKey` defaults to `F8`; set it to `nil` to omit the shortcut. `enabled = false` disables the mod at startup.
+`healthThreshold` and `staminaThreshold` default to `0.20`. `healthHoldSeconds` and `staminaHoldSeconds` default to `1.5`. Either resource can reveal the combined panel. Healing/regeneration alone does not extend the delay. The delay uses game time and pauses with the game. Changes to maximum resource capacity that lower its percentage can also trigger the reveal.
 
-## How it works
+`panels` lists direct HUD fields. Removing a non-stat entry leaves it under game control. The optional configuration omits only `WBP_Compass`. `enabled = false` disables all mod work at startup.
 
-The mod reacts to HUD construction/activation, preset push/pop, player restart, and focus callbacks. It reads current state at those events and updates at most one named panel per frame. Six panels normally settle over several frames; there is no fade animation or idle activity poll. Interaction/UI events outside this set are intentionally left to the game.
+## Behavior and performance
 
-Initialization and missing-widget retries are finite. Once a job finishes, its worker stops. No widget-tree enumeration or global HUD search runs. If a required hook is unavailable, initialization waits for a later lifecycle event. Missing player state reveals managed panels when possible.
+Lifecycle and preset callbacks initialize/reapply the named panels. A bounded sampler reads the current player's health and stamina percentages every **100 ms** because the available UI callbacks do not cover every resource change. Detection can take approximately one sampling interval; panel writes follow on separate frames. A damage/use-and-recovery change entirely between samples may not be observed.
 
-The Lua entry point passed mocked startup, 600-second idle, event-burst, ownership/world replacement, delayed-widget, failed-registration, and frame-budget checks. These establish bounded work in the tests, not in-game reliability or an FPS improvement. Test a fresh launch, save loading, death/respawn, weapon draw/sheath, combat enter/exit, focus, dialogue, and F8 before relying on this development build.
+The sampler checks current ownership and stops if the player context or stat readings become unavailable. Recovery occurs on subsequent HUD/player lifecycle events. Missing readings leave the stat panel under normal game visibility when possible. Reveals restore opacity; they do not override the game's visibility presets.
+
+There are no global HUD searches, widget-tree walks, class-default changes, or recurring configuration reads. The panel worker terminates after each job; the two-value sampler continues while the player context is ready. Unchanged samples cause no widget reads or writes. A shared frame guard separates sampling from panel updates.
+
+Archive-based Lua mocks cover strict thresholds, the 1.5-second hold and refresh, shared stat visibility, combat remaining hidden, paused timers, 600-second idle sampling budgets, invalid/missing state, ownership/world replacement, hook failure, event bursts, and the compass option. Packaging checks verify the actual ZIP bytes and installed Vortex installer plan. These are offline checks, not proof of in-game correctness or an FPS improvement. Check fresh launch, loading/respawn, both player forms, damage, stamina spending/regeneration, low resources, difficulty-controlled indicators, and frame times in game.
 
 ## License
 
-MIT. A standalone implementation informed by the author's HUD Tweaks - Fixes work and the game's HUD structure. No game assets or UE4SS binaries are included.
+MIT. Standalone code informed by the author's HUD Tweaks - Fixes work and the game's HUD structure. No game assets or UE4SS binaries are included.

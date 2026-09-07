@@ -12,6 +12,6 @@
   {
     "type": "attribute",
     "key": "description",
-    "value": "Optional Show Compass version. Compass follows normal game visibility; other panels auto-hide. Standalone event-driven HUD: quiet exploration, contextual reveal, and no idle activity polling. Development build; in-game validation pending."
+    "value": "Optional Show Compass version. Quiet combat HUD with combined health/stamina reveal after resource loss for 1.5 seconds or below 20%. Native enemy health and difficulty-controlled indicators. Development build; in-game validation pending."
   }
 ]

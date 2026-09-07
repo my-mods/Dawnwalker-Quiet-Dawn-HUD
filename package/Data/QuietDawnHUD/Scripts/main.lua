@@ -1,13 +1,19 @@
 -- Quiet Dawn HUD | MIT License
 -- Event-driven panel opacity. No widget-tree walks, global object searches,
--- class-default edits, animation hooks, activity polling, or Lua coroutines.
+-- class-default edits, animation hooks, or Lua coroutines.
+-- Two cached player-stat reads every 100 ms cover changes without reliable UI events.
 local ok, config = pcall(require, "QuietDawnConfig")
 if not ok or type(config) ~= "table" then
     print("[Quiet Dawn HUD] Invalid configuration; HUD left to the game.")
     return
 end
 local allowed = {HumanStats=true, VampireStats=true, WBP_Compass=true,
-    WBP_HUD_QuestInfo=true, WBP_HUD_Quickslots=true, Crosshair=true}
+    WBP_HUD_QuestInfo=true, WBP_HUD_Quickslots=true, Crosshair=true,
+    WBP_AA_Quickslots=true, WBP_OpenFocusPrompt=true,
+    WBP_HUD_Quickslots_ChangePrompt=true, WBP_ControlsLegend=true,
+    WBP_BuffContainer=true, WBP_HUD_AbilityCooldownsContainer=true,
+    CombatFocusPanel=true, WBP_HUD_FocusCharge_Bar=true,
+    WBP_HUD_SpecialAttackCooldown=true, XPBar=true}
 local names, seen = {}, {}
 if type(config.panels) ~= "table" then return end
 for _, name in ipairs(config.panels) do
@@ -18,9 +24,18 @@ for _, name in ipairs(config.panels) do
     seen[name] = true
     names[#names+1] = name
 end
-for _, key in ipairs({"enabled", "showWeaponDrawn", "showInFocus", "showLockedOn"}) do
-    if type(config[key]) ~= "boolean" then
-        print("[Quiet Dawn HUD] Invalid boolean setting; disabled.")
+if type(config.enabled) ~= "boolean" then return end
+for _, key in ipairs({"healthThreshold", "staminaThreshold"}) do
+    local value=config[key]
+    if type(value) ~= "number" or value ~= value or value < 0 or value > 1 then
+        print("[Quiet Dawn HUD] Invalid threshold; disabled.")
+        return
+    end
+end
+for _, key in ipairs({"healthHoldSeconds", "staminaHoldSeconds"}) do
+    local value=config[key]
+    if type(value) ~= "number" or value ~= value or value < 0 or value > 60 then
+        print("[Quiet Dawn HUD] Invalid hold duration; disabled.")
         return
     end
 end
@@ -31,14 +46,16 @@ if type(LoopInGameThreadWithDelay) ~= "function" then
 end
 
 local ROOT = "/Game/_Dawnwalker/UI/_Unified/HUD/WBP_GameHUD.WBP_GameHUD_C"
-local hud, candidate, controller, world, combatSubsystem
-local worker, dirty, reveal = false, false, false
+local hud, candidate, controller, world
+local worker, dirty, monitoring, stateReady = false, false, false, false
+local lastPawn, lastCombat, previousHealth, previousStamina
+local healthUntil, staminaUntil = 0, 0
 local panels = {}
 local cursor, desired, attempts = 0, 1, 0
 local hooks, hookIndex = {}, 1
 local warned = false
 local frameClock, lastFrame
-local wake
+local wake, startMonitor
 local function valid(object)
     return object ~= nil and object:IsValid()
 end
@@ -65,9 +82,7 @@ local specs = {
     end, true},
     {ROOT..":Construct", capture},
     {ROOT..":BP_OnActivated", capture},
-    {ROOT..":OnFocusModeEntered", capture},
-    {ROOT..":OnFocusModeExited", capture},
-    {ROOT..":OnFocusAbilitiesExecutionStarted", capture},
+    {ROOT..":On Coen Form Changed", capture},
 }
 local function noop() end
 local function registerOne()
@@ -94,6 +109,8 @@ local function accept(object)
     if valid(controller) and controller ~= pc then return false end
     if object ~= hud or objectWorld ~= world then
         hud, world, panels = object, objectWorld, {}
+        lastPawn, lastCombat, previousHealth, previousStamina = nil, nil, nil, nil
+        healthUntil, staminaUntil = 0, 0
     end
     controller = pc
     return true
@@ -102,25 +119,31 @@ local function snapshot()
     if not valid(hud) or not valid(controller) or not valid(world) then return nil end
     if hud:GetWorld() ~= world or controller:GetWorld() ~= world
         or hud:GetOwningPlayer() ~= controller then return nil end
-    if reveal then return 1 end
     local pawn = controller.Pawn
     if not valid(pawn) or pawn:GetWorld() ~= world then return nil end
-    -- Missing gameplay state fails open. No borrowed structures leave this call.
     local combat = pawn.CombatComponent
     if not valid(combat) then return nil end
-    local mode = tonumber(combat.CurrentCombatMode)
-    if mode == nil then return nil end
-    local active = config.showWeaponDrawn and mode ~= 0
-    if config.showLockedOn then active = active or combat:IsHardLocked() == true end
-    if config.showInFocus then
-        active = active or pawn.bIsInFocusMode == true
-        local focus = pawn.CombatFocusComponent
-        if valid(focus) then active = active or focus:IsExecuting() == true end
+    -- No component search, arrays, or borrowed attribute structures.
+    local health = tonumber(combat:GetHealthPercentage())
+    local stamina = tonumber(combat:GetStaminaPercentage())
+    if not health or not stamina or health ~= health or stamina ~= stamina
+        or health < 0 or stamina < 0 or health > 1 or stamina > 1 then return nil end
+    local now = frameClock:GetGameTimeInSeconds(controller)
+    if lastPawn ~= pawn or lastCombat ~= combat then
+        previousHealth, previousStamina = nil, nil
+        healthUntil, staminaUntil = 0, 0
+        lastPawn, lastCombat = pawn, combat
     end
-    if valid(combatSubsystem) and combatSubsystem:GetWorld() == world then
-        active = active or combatSubsystem.bIsInCombat == true
+    if previousHealth and health < previousHealth - 0.000001 then
+        healthUntil = now + config.healthHoldSeconds
     end
-    return active and 1 or 0
+    if previousStamina and stamina < previousStamina - 0.000001 then
+        staminaUntil = now + config.staminaHoldSeconds
+    end
+    previousHealth, previousStamina = health, stamina
+    local needed = health < config.healthThreshold or stamina < config.staminaThreshold
+        or now < healthUntil or now < staminaUntil
+    return needed and 1 or 0
 end
 local function step()
     -- At most one hook registration OR one state snapshot OR one direct panel
@@ -149,8 +172,8 @@ local function step()
             end
         end
         local success, value = pcall(snapshot)
-        desired = success and value or nil
-        if desired == nil then desired=1 end
+        stateReady = success and value ~= nil
+        desired = stateReady and value or 1
         cursor=1
         return false
     end
@@ -168,7 +191,8 @@ local function step()
                     entry = {object=object, original=current}
                     panels[name]=entry
                 end
-                local target = desired == 0 and 0 or entry.original
+                local isStats = name == "HumanStats" or name == "VampireStats"
+                local target = isStats and desired == 1 and entry.original or 0
                 if current ~= target then object:SetRenderOpacity(target) end
             elseif attempts < 120 then
                 attempts=attempts+1
@@ -184,7 +208,8 @@ local function step()
     if dirty then return false end
     attempts=0
     worker=false
-    return true -- terminate; no permanent idle worker
+    if stateReady then startMonitor() end
+    return true -- the panel worker stops; only the bounded stat sampler remains
 end
 wake = function()
     dirty=true
@@ -223,22 +248,39 @@ if not subscribed then
     print("[Quiet Dawn HUD] HUD lifecycle notification unavailable; disabled.")
     return
 end
-local combatSubscribed = pcall(NotifyOnNewObject, "/Script/DogwoodCombat.CombatSubsystem", function(object)
-    combatSubsystem=object
-    wake()
-end)
-if not combatSubscribed then
-    print("[Quiet Dawn HUD] Combat notification unavailable; stance and focus events remain active.")
-end
-if config.manualRevealKey ~= nil then
-    local key = Key and Key[config.manualRevealKey]
-    if key then
-        RegisterKeyBind(key, function()
-            reveal=not reveal
+-- One sampler, only after successful ownership/stat initialization. It reads two
+-- scalar values every 100 ms. It never searches for objects or retries readiness.
+-- Visibility changes wake the panel worker; unchanged values cause no widget work.
+startMonitor = function()
+    if monitoring then return end
+    monitoring=true
+    local ownedHUD, ownedController = hud, controller
+    LoopInGameThreadWithDelay(100, function()
+        if hud ~= ownedHUD or controller ~= ownedController then
+            monitoring=false
             wake()
+            return true
+        end
+        local success, value = pcall(function()
+            if not valid(frameClock) then return nil end
+            local frame=frameClock:GetFrameCount()
+            if frame == lastFrame then return "deferred" end
+            lastFrame=frame
+            return snapshot()
         end)
-    else
-        print("[Quiet Dawn HUD] Manual reveal key unknown; key binding skipped.")
-    end
+        if value == "deferred" then return false end
+        if not success or value == nil then
+            monitoring=false
+            stateReady=false
+            desired=1 -- leave the stat panel available if reading it fails
+            wake()
+            return true
+        end
+        if desired ~= value then
+            desired=value
+            wake()
+        end
+        return false
+    end)
 end
 wake()

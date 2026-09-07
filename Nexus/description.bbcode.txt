@@ -1,19 +1,21 @@
 [b]Quiet Dawn HUD - Auto-hide HUD[/b]
-A quiet view of the world, with the essentials returning when you need them.
+A quiet view of the world, with health and stamina returning when needed.
 
-Hides health/stamina panels, compass, quest tracker, quickslots, and crosshair during quiet exploration. HUD preset and focus events refresh the panels for combat, drawn weapons, lock-on, and focus. F8 toggles a manual reveal. Interaction prompts, subtitles, notifications, boss bars, and menus retain their normal behavior.
+Combat, drawing a weapon, lock-on, and focus do not reveal the general HUD. Enemy health remains controlled by the game. Parry/attack indicators follow the game's difficulty settings; this mod never enables disabled indicators.
 
-[b]Development build[/b]
-In-game validation and performance measurements are pending. Designed around Steam build 25129649 and a Dawnwalker-compatible UE4SS build with delayed game-thread callbacks. This is a standalone alternative: disable HUD Tweaks and HUD Tweaks - Fixes before enabling it.
+[b]Health and stamina[/b]
+Both bars appear together after damage or stamina use, then hide 1.5 seconds after the last resource drop. Further drops refresh the delay. Either resource strictly below 20% keeps both bars visible. Regeneration alone does not refresh the timer. Values are checked every 100 ms against the current player, with no global object searches or widget-tree walks.
 
-[b]Install[/b]
-Close the game. Disable the previous HUD mods in Vortex and deploy. Import Quiet-Dawn-HUD.zip, choose UE4SS (Lua mods), enable, and deploy. Restart the game. F8 reveals the panels; press again to return to contextual behavior.
-
-[b]Configuration and updates[/b]
-QuietDawnConfig.lua selects panels, reveal conditions, and the shortcut. Configuration loads at startup. Back up preferences before replacing the mod: the shipped configuration is a full replacement, not a merge. Remove through Vortex with the game closed.
-
-[b]License[/b]
-MIT. No game assets or UE4SS binaries included.
+Compass, quest tracker, quickslots, crosshair, control legend, buffs, ability cooldowns, focus HUD, special-attack cooldown, and XP stay hidden. Interaction prompts, dialogue, subtitles, notifications, boss bars, and menus retain normal game behavior. No whole-HUD reveal shortcut.
 
 [b]Optional Show Compass version[/b]
-Quiet-Dawn-HUD-Show-Compass.zip is a complete alternative. The compass follows normal game visibility while the other five panels auto-hide. Install only one version. To switch, close the game, back up configuration, disable/remove the previous version in Vortex and deploy, then import and enable the other archive. Both versions use the same runtime paths.
+Quiet-Dawn-HUD-Show-Compass.zip is a complete alternative that retains normal compass visibility. Install only one version; both archives use the same runtime paths.
+
+[b]Install and update[/b]
+Close the game. Disable HUD Tweaks and HUD Tweaks - Fixes in Vortex and deploy. Import the chosen ZIP, select UE4SS (Lua mods), enable and deploy, then restart. Back up configuration before replacing the existing entry: configuration is replaced in full, not merged. Remove through Vortex with the game closed.
+
+[b]Requirements and status[/b]
+Dawnwalker-compatible UE4SS with delayed game-thread callbacks and Kismet frame/game-time functions. Reference game build: 25129649. Development build; gameplay and frame-time measurements remain pending. Resource changes entirely between samples may be missed. Native game visibility restrictions remain in effect.
+
+[b]Configuration and license[/b]
+QuietDawnConfig.lua contains thresholds and hold durations; restart after editing. MIT licensed. No game assets or loader binaries included.
