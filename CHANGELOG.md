@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Hide the neutral enemy lock-on marker while preserving active cues on its shared widget.
+- Add bounded event-driven marker updates to the existing worker; no new polling timer or difficulty override.
+
 - Reduce resource show/hide updates to the two stat panels; reuse the sampler result and cache missing fields until lifecycle/preset changes.
 - Prevent low-frame-rate sampler callbacks from starving pending panel updates.
 - Stop stat sampling entirely when neither stat panel is configured.

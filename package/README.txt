@@ -5,6 +5,7 @@ A quiet view of the world, with health and stamina returning when needed.
 For **The Blood of Dawnwalker**. Combat, drawing a weapon, lock-on, and focus no longer reveal the general HUD.
 
 - **Enemy health:** normal game behavior, always exempt from this mod's hiding.
+- **Enemy lock-on marker:** hidden in its neutral state. The shared widget is restored for active attack, parry-window, unblockable-attack, or weak-spot cues; game visibility and difficulty restrictions remain in effect. Unknown states are left visible rather than suppressing a possible warning.
 - **Player health and stamina:** shown together when either value drops, or either is strictly below **20%**.
 - **Hide delay:** **1.5 seconds** after the last damage or stamina drop. Further drops restart the relevant delay. Either value below 20% keeps the panel visible; exactly 20% does not qualify by itself.
 - **Parry/attack indicators:** normal game behavior, including difficulty restrictions. This mod never enables disabled indicators.
@@ -47,9 +48,11 @@ Lifecycle and preset callbacks initialize/reapply the named panels. A bounded sa
 
 The sampler checks current ownership and stops if the player context or stat readings become unavailable. Recovery occurs on subsequent HUD/player lifecycle events. Missing readings leave the stat panel under normal game visibility when possible. Reveals restore opacity; they do not override the game's visibility presets.
 
+The lock-on marker shares its widget with combat cues, so it cannot be hidden unconditionally. Its construction and icon-state callbacks schedule bounded updates through the existing worker. No difficulty-setting poll or extra timer is added. A fixed 64-entry marker cache/queue bounds work; excess markers remain under normal game control until capacity becomes available.
+
 There are no global HUD searches, widget-tree walks, class-default changes, or recurring configuration reads. The panel worker terminates after each job; the two-value sampler continues while the player context is ready. Unchanged samples cause no widget reads or writes. A shared frame guard separates sampling from panel updates. Pending panel work takes priority over the sampler so it can finish even at very low frame rates. Resource visibility changes revisit only the two stat panels; unrelated HUD fields are checked on lifecycle/preset events. Missing fields are not retried on each resource change. Removing both stat panels from the configuration also disables stat sampling.
 
-Archive-based Lua mocks cover strict thresholds, the 1.5-second hold and refresh, shared stat visibility, combat remaining hidden, paused timers, 600-second idle sampling budgets, invalid/missing state, ownership/world replacement, hook failure, event bursts, and the compass option. Packaging checks verify the actual ZIP bytes and installed Vortex installer plan. These are offline checks, not proof of in-game correctness or an FPS improvement. Check fresh launch, loading/respawn, both player forms, damage, stamina spending/regeneration, low resources, difficulty-controlled indicators, and frame times in game.
+Archive-based Lua mocks cover strict thresholds, the 1.5-second hold and refresh, shared stat visibility, combat remaining hidden, paused timers, 600-second idle sampling budgets, invalid/missing state, ownership/world replacement, hook failure, event bursts, and the compass option. Packaging checks verify the actual ZIP bytes and installed Vortex installer plan. These are offline checks, not proof of in-game correctness or an FPS improvement. Check fresh launch, loading/respawn, both player forms, damage, stamina spending/regeneration, low resources, difficulty-controlled indicators, neutral lock-on hiding and the return of attack/parry cues, and frame times in game.
 
 ## License
 

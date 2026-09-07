@@ -68,6 +68,103 @@ local function unwrap(param)
     if param == nil then return nil end
     return param:get()
 end
+-- The game uses one widget for neutral lock-on and combat cues. Never hide it
+-- during a non-neutral/unknown icon state, and never change difficulty settings.
+local MARKER = "/Game/_Dawnwalker/UI/_Unified/Combat/WBP_CombatTargetIndicator.WBP_CombatTargetIndicator_C"
+local markerSpecs = {"Construct", "OnObservedStubIconTypeChanged",
+    "NotifyIndicatorCleared", "EnableHardLock", "RefreshIndicatorsVisibility"}
+local markerHookIndex, markerHookAttempts, markerSeen = 1, 0, false
+local markerQueue, markerPending, markerFirst, markerLast = {}, {}, 1, 0
+local markerCache, markerSlots, markerCount, markerPrune = {}, {}, 0, 1
+local markerCacheWorld, markerCacheController, markerTurn
+local markerWork = 0
+local function queueMarker(object, retries)
+    if object == nil then return end
+    -- Capture only the wrapper here: construction may not be on the game
+    -- thread. Pointer/property reads happen in the shared game-thread worker.
+    local pending=markerPending[object]
+    if pending then pending.object=object; return end
+    -- Excess objects remain under game control. No unbounded queues or scans.
+    if markerLast-markerFirst+1 >= 64 then return end
+    local job={object=object, retries=retries or 0}
+    markerLast=markerLast+1
+    markerQueue[markerLast]=job
+    markerPending[object]=job
+    if wake then wake("marker") end
+end
+local function markerEvent(context)
+    queueMarker(unwrap(context))
+end
+local function markerHooksStep()
+    local path=MARKER..":"..markerSpecs[markerHookIndex]
+    local success, pre, post=pcall(RegisterHook, path, markerEvent)
+    markerHookAttempts=markerHookAttempts+1
+    if success and type(pre)=="number" and type(post)=="number" then
+        hooks[path]={pre,post}
+        markerHookIndex=markerHookIndex+1
+    end
+end
+local function markerStep()
+    local job=markerQueue[markerFirst]
+    markerQueue[markerFirst]=nil
+    markerPending[job.object]=nil
+    markerFirst=markerFirst+1
+    if markerFirst>markerLast then markerFirst,markerLast=1,0 end
+    if markerHookIndex<=#markerSpecs then return end -- fail open until hooks work
+    local object=job.object
+    if not valid(object) then return end
+    job.address=object:GetAddress()
+    if not valid(controller) or not valid(world) then return end
+    if object:GetWorld()~=world or object:GetOwningPlayer()~=controller then return end
+    if controller:GetWorld()~=world then return end
+    if markerCacheWorld~=world or markerCacheController~=controller then
+        markerCache,markerSlots,markerCount,markerPrune={}, {}, 0, 1
+        markerCacheWorld,markerCacheController=world,controller
+    end
+    local entry=markerCache[job.address]
+    if not entry and markerCount>=64 then
+        -- Inspect one old slot per frame, not the entire object cache.
+        local slot=markerPrune
+        markerPrune=markerPrune%64+1
+        local old=markerSlots[slot]
+        if not valid(old.object) then
+            markerCache[old.address]=nil
+            markerSlots[slot]=nil
+            markerCount=markerCount-1
+            queueMarker(object,job.retries+1)
+        end
+        return
+    end
+    -- This Blueprint property is updated by the game's directional and
+    -- non-directional display paths. 0=Defending (neutral); 1..13 are cues.
+    local readable,icon=pcall(function() return tonumber(object["Currently Displayed Icon Type"]) end)
+    if not readable or icon==nil then
+        if entry and entry.hidden then
+            object:SetRenderOpacity(entry.original)
+            entry.hidden=false
+        end
+        if job.retries<8 then queueMarker(object,job.retries+1) end
+        return
+    end
+    local current=object:GetRenderOpacity()
+    if not entry then
+        entry={object=object,address=job.address,original=current}
+        markerCache[job.address]=entry
+        -- Fixed-size plain-Lua slot selection; no object reads or traversal.
+        for slot=1,64 do if not markerSlots[slot] then markerSlots[slot]=entry;break end end
+        markerCount=markerCount+1
+    end
+    if icon==0 then
+        if not entry.hidden or current~=0 then entry.original=current end
+        if current~=0 then object:SetRenderOpacity(0) end
+        entry.hidden=true
+    elseif entry.hidden then
+        if current~=entry.original then object:SetRenderOpacity(entry.original) end
+        entry.hidden=false
+    else
+        entry.original=current -- retain the game's opacity while a cue is active
+    end
+end
 local function signal() wake() end
 local function capture(context)
     candidate = unwrap(context)
@@ -167,6 +264,38 @@ local function step()
         end
         return false
     end
+    if markerSeen and markerHookIndex<=#markerSpecs and markerHookAttempts<12 then
+        markerHooksStep()
+        return false
+    end
+    -- During a large marker burst the shared worker also services vitals.
+    -- Six 16-ms marker slices plus this sample slice bound that extra cadence.
+    if markerWork>=6 and stateReady and cursor==0 and not dirty then
+        markerWork=0
+        local success,value=pcall(snapshot)
+        if not success or value==nil then
+            stateReady=false
+            desired=1
+            wake(true)
+        elseif value~=desired then
+            desired=value
+            wake(true)
+        end
+        return false
+    end
+    markerTurn=not markerTurn
+    if markerFirst<=markerLast and (markerTurn or (cursor==0 and not dirty)) then
+        local success, reason=pcall(markerStep)
+        markerWork=markerWork+1
+        if not success then print("[Quiet Dawn HUD] Marker update skipped: "..tostring(reason)) end
+        return false
+    end
+    if cursor==0 and not dirty then
+        if markerFirst<=markerLast then return false end
+        worker=false
+        if stateReady then startMonitor() end
+        return true
+    end
     if cursor == 0 then
         dirty = false
         if candidate then
@@ -179,6 +308,7 @@ local function step()
         -- Stat-only wakes already have a fresh sampler result. Do not sample
         -- twice or revisit unrelated HUD panels on every show/hide transition.
         if fullJob then
+            markerWork=0
             if #statNames > 0 then
                 local success, value = pcall(snapshot)
                 stateReady = success and value ~= nil
@@ -225,7 +355,7 @@ local function step()
         return false
     end
     cursor=0
-    if dirty then return false end
+    if dirty or markerFirst<=markerLast then return false end
     attempts=0
     worker=false
     if stateReady then startMonitor() end
@@ -236,7 +366,7 @@ wake = function(statsOnly)
         fullPending=true
         absent={}
     end
-    dirty=true
+    if statsOnly~="marker" then dirty=true end
     if worker then return end
     worker=true
     attempts=0
@@ -271,6 +401,14 @@ end)
 if not subscribed then
     print("[Quiet Dawn HUD] HUD lifecycle notification unavailable; disabled.")
     return
+end
+local markerSubscribed=pcall(NotifyOnNewObject, MARKER, function(object)
+    markerSeen=true
+    markerHookAttempts=0
+    queueMarker(object)
+end)
+if not markerSubscribed then
+    print("[Quiet Dawn HUD] Marker lifecycle notification unavailable; marker left to the game.")
 end
 -- One sampler, only after successful ownership/stat initialization. It reads two
 -- scalar values every 100 ms. It never searches for objects or retries readiness.
