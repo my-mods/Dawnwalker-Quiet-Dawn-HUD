@@ -80,6 +80,11 @@ local markerQueue, markerPending, markerFirst, markerLast = {}, {}, 1, 0
 local markerCache, markerSlots, markerCount, markerPrune = {}, {}, 0, 1
 local markerCacheWorld, markerCacheController, markerTurn
 local markerWork = 0
+local function markersReady()
+    -- Keep construction events queued until HUD ownership has been accepted.
+    -- Missing HUD readiness sleeps until a lifecycle event, without polling.
+    return markerFirst<=markerLast and candidate==nil and world~=nil and controller~=nil
+end
 local function queueMarker(object, retries)
     if object == nil then return end
     -- Capture only the wrapper here: construction may not be on the game
@@ -118,7 +123,21 @@ local function markerStep()
     if not valid(object) then return end
     job.address=object:GetAddress()
     if not valid(controller) or not valid(world) then return end
-    if object:GetWorld()~=world or object:GetOwningPlayer()~=controller then return end
+    local objectWorld, owner=object:GetWorld(), object:GetOwningPlayer()
+    if not valid(objectWorld) or not valid(owner) then
+        if D.debugLogging then
+            D.count("markerNotReady")
+            if job.retries==0 or job.retries==119 then
+                D.event("marker","id=%s ownership not ready; attempt=%d/120",tostring(job.address),job.retries+1)
+            end
+        end
+        if job.retries<119 then queueMarker(object,job.retries+1) end
+        return
+    end
+    if objectWorld~=world or owner~=controller then
+        if D.debugLogging then D.count("markerForeignOwner") end
+        return
+    end
     if controller:GetWorld()~=world then return end
     if markerCacheWorld~=world or markerCacheController~=controller then
         markerCache,markerSlots,markerCount,markerPrune={}, {}, 0, 1
@@ -217,12 +236,13 @@ local function registerOne()
 end
 registerOne=D.wrap("hook",registerOne)
 local function accept(object)
-    if not valid(object) then return false end
+    if not valid(object) then return false, "invalid HUD" end
     local pc = object:GetOwningPlayer()
-    if not valid(pc) or not pc:IsLocalController() then return false end
+    if not valid(pc) then return false, "missing owning player" end
+    if not pc:IsLocalController() then return false, "non-local owning player" end
     local objectWorld = object:GetWorld()
-    if not valid(objectWorld) or objectWorld ~= pc:GetWorld() then return false end
-    if valid(controller) and controller ~= pc then return false end
+    if not valid(objectWorld) or objectWorld ~= pc:GetWorld() then return false, "world mismatch" end
+    if valid(controller) and controller ~= pc then return false, "controller mismatch" end
     if object ~= hud or objectWorld ~= world then
         hud, world, panels, absent = object, objectWorld, {}, {}
         lastPawn, lastCombat, previousHealth, previousStamina = nil, nil, nil, nil
@@ -301,14 +321,14 @@ local function step()
         return false
     end
     markerTurn=not markerTurn
-    if markerFirst<=markerLast and (markerTurn or (cursor==0 and not dirty)) then
+    if markersReady() and (markerTurn or (cursor==0 and not dirty)) then
         local success, reason=pcall(markerStep)
         markerWork=markerWork+1
         if not success then print("[Quiet Dawn HUD] Marker update skipped: "..tostring(reason)) end
         return false
     end
     if cursor==0 and not dirty then
-        if markerFirst<=markerLast then return false end
+        if markersReady() then return false end
         worker=false
         if stateReady then startMonitor() end
         return true
@@ -316,9 +336,18 @@ local function step()
     if cursor == 0 then
         dirty = false
         if candidate then
-            if accept(candidate) then candidate=nil else
+            local accepted, reason=accept(candidate)
+            if accepted then candidate=nil else
                 attempts=attempts+1
-                if attempts < 120 then return false end
+                if D.debugLogging then
+                    D.count("hudNotReady")
+                    if attempts==1 or attempts==120 then
+                        D.event("lifecycle","HUD ownership not ready; reason=%s attempt=%d/120",reason,attempts)
+                    end
+                end
+                -- Preserve the job while ownership becomes ready. Clearing
+                -- dirty here used to terminate the worker after one attempt.
+                if attempts < 120 then dirty=true; return false end
                 candidate=nil
             end
         end
@@ -376,7 +405,7 @@ local function step()
         return false
     end
     cursor=0
-    if dirty or markerFirst<=markerLast then return false end
+    if dirty or markersReady() then return false end
     attempts=0
     worker=false
     if stateReady then startMonitor() end

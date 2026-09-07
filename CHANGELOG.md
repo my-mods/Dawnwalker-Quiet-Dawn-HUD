@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fix HUD ownership retries stopping after the first unsuccessful attempt, leaving HUD and neutral marker hiding uninitialized.
+- Retain early marker construction events until HUD initialization and retry delayed marker ownership with a finite budget. Add readiness diagnostics; preserve combat cues and difficulty rules.
+
 - Hide the neutral enemy lock-on marker while preserving active cues on its shared widget.
 - Add bounded event-driven marker updates to the existing worker; no new polling timer or difficulty override.
 
