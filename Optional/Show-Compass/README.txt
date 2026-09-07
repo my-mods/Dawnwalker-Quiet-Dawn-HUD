@@ -17,7 +17,7 @@ The compass, quest tracker, quickslots and their change prompt, crosshair, contr
 
 ## Requirements and compatibility
 
-- Dawnwalker-compatible UE4SS exposing `LoopInGameThreadWithDelay`, `KismetSystemLibrary.GetFrameCount`, and `GetGameTimeInSeconds`. Development reference: commit `97b7e501c`.
+- Dawnwalker-compatible UE4SS exposing `ExecuteInGameThreadWithDelay`, `KismetSystemLibrary.GetFrameCount`, and `GetGameTimeInSeconds`. Development reference: commit `97b7e501c`.
 - Stock asset/API reference: Steam build **25129649**, executable CL-257186.
 - **Development build: in-game validation is pending.** Bar visibility, difficulty variants, and frame times require gameplay testing.
 - Disable **HUD Tweaks and HUD Tweaks - Fixes** before enabling this mod. They are not dependencies and can compete over opacity despite having different filenames.
@@ -44,6 +44,14 @@ Edit `Scripts/QuietDawnConfig.lua` through your normal mod configuration workflo
 `healthThreshold` and `staminaThreshold` default to `0.20`. `healthHoldSeconds` and `staminaHoldSeconds` default to `1.5`. Either resource can reveal the combined panel. Healing/regeneration alone does not extend the delay. The delay uses game time and pauses with the game. Changes to maximum resource capacity that lower its percentage can also trigger the reveal.
 
 `panels` lists direct HUD fields. Removing a non-stat entry leaves it under game control. The optional configuration omits only `WBP_Compass`. `enabled = false` disables all mod work at startup.
+
+## Debug logging
+
+Copy `QuietDawnHUD.ini.example` to `%LOCALAPPDATA%/Dawnwalker/Saved/Config/QuietDawnHUD.ini`. Set `[Debug] Enabled=true` to activate logging, or `Enabled=false` to disable it, then restart the game. This personal file survives mod updates; the archive defaults to logging off.
+
+Messages use `[Quiet Dawn HUD][DEBUG]` in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. They report HUD visibility transitions, panel/marker writes, hook setup, unavailable state, and periodic timing/counter summaries. `SummarySeconds=10`, `SlowCallbackMs=2`, and `MaxEventsPerSecond=6` control summary frequency, slow-phase reporting, and the event output limit. Suppressed events are counted. The INI is read once; logging adds no timer or object searches. Disabled diagnostics retain the original work functions without timing wrappers.
+
+Timings use `os.clock` for Lua work phases, including their synchronous native calls. Nested phases overlap: do not sum them. These measurements are not engine frame times or proof of a stutter fix. Sample gaps use game time. For diagnosis, reproduce damage, stamina use, lock-on/cues and a save load, then inspect the log before launching another session.
 
 ## Behavior and performance
 

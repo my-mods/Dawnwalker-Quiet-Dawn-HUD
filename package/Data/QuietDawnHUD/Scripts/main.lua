@@ -1,3 +1,4 @@
+local D = require("QuietDawnDiagnostics")
 -- Quiet Dawn HUD | MIT License
 -- Event-driven panel opacity. No widget-tree walks, global object searches,
 -- class-default edits, animation hooks, or Lua coroutines.
@@ -44,11 +45,12 @@ local statNames = {}
 for _, name in ipairs(names) do
     if name == "HumanStats" or name == "VampireStats" then statNames[#statNames+1]=name end
 end
-if type(LoopInGameThreadWithDelay) ~= "function" then
+if type(ExecuteInGameThreadWithDelay) ~= "function" then
     print("[Quiet Dawn HUD] Requires delayed game-thread callbacks; disabled.")
     return
 end
 
+if D.enabled then D.event("config","healthThreshold=%.3f staminaThreshold=%.3f healthHold=%.3fs staminaHold=%.3fs panels=%d",config.healthThreshold,config.staminaThreshold,config.healthHoldSeconds,config.staminaHoldSeconds,#names) end
 local ROOT = "/Game/_Dawnwalker/UI/_Unified/HUD/WBP_GameHUD.WBP_GameHUD_C"
 local hud, candidate, controller, world
 local worker, dirty, monitoring, stateReady = false, false, false, false
@@ -83,9 +85,9 @@ local function queueMarker(object, retries)
     -- Capture only the wrapper here: construction may not be on the game
     -- thread. Pointer/property reads happen in the shared game-thread worker.
     local pending=markerPending[object]
-    if pending then pending.object=object; return end
+    if pending then pending.object=object; if D.enabled then D.count("markerCoalesced") end; return end
     -- Excess objects remain under game control. No unbounded queues or scans.
-    if markerLast-markerFirst+1 >= 64 then return end
+    if markerLast-markerFirst+1 >= 64 then if D.enabled then D.count("markerQueueFull") end; return end
     local job={object=object, retries=retries or 0}
     markerLast=markerLast+1
     markerQueue[markerLast]=job
@@ -102,6 +104,7 @@ local function markerHooksStep()
     if success and type(pre)=="number" and type(post)=="number" then
         hooks[path]={pre,post}
         markerHookIndex=markerHookIndex+1
+        if D.enabled then D.event("hook","registered=%s",path) end
     end
 end
 local function markerStep()
@@ -123,6 +126,7 @@ local function markerStep()
     end
     local entry=markerCache[job.address]
     if not entry and markerCount>=64 then
+        if D.enabled then D.count("markerCacheFull") end
         -- Inspect one old slot per frame, not the entire object cache.
         local slot=markerPrune
         markerPrune=markerPrune%64+1
@@ -156,16 +160,24 @@ local function markerStep()
     end
     if icon==0 then
         if not entry.hidden or current~=0 then entry.original=current end
-        if current~=0 then object:SetRenderOpacity(0) end
+        if current~=0 then
+            object:SetRenderOpacity(0)
+            if D.enabled then D.count("markerWrites");D.event("marker","id=%s icon=%s opacity=%.3f->0",tostring(job.address),tostring(icon),current) end
+        end
         entry.hidden=true
     elseif entry.hidden then
-        if current~=entry.original then object:SetRenderOpacity(entry.original) end
+        if current~=entry.original then
+            object:SetRenderOpacity(entry.original)
+            if D.enabled then D.count("markerWrites");D.event("marker","id=%s icon=%s opacity=%.3f->%.3f",tostring(job.address),tostring(icon),current,entry.original) end
+        end
         entry.hidden=false
     else
         entry.original=current -- retain the game's opacity while a cue is active
     end
 end
-local function signal() wake() end
+markerStep=D.wrap("marker",markerStep)
+markerHooksStep=D.wrap("hook",markerHooksStep)
+local function signal() if D.enabled then D.count("presetEvents") end;wake() end
 local function capture(context)
     candidate = unwrap(context)
     wake()
@@ -199,9 +211,11 @@ local function registerOne()
     if success and type(pre) == "number" and type(post) == "number" then
         hooks[spec[1]] = {pre, post}
         hookIndex = hookIndex + 1
+        if D.enabled then D.event("hook","registered=%s",spec[1]) end
     end
     return hookIndex > #specs
 end
+registerOne=D.wrap("hook",registerOne)
 local function accept(object)
     if not valid(object) then return false end
     local pc = object:GetOwningPlayer()
@@ -213,6 +227,7 @@ local function accept(object)
         hud, world, panels, absent = object, objectWorld, {}, {}
         lastPawn, lastCombat, previousHealth, previousStamina = nil, nil, nil, nil
         healthUntil, staminaUntil = 0, 0
+        if D.enabled then D.event("lifecycle","HUD/world changed; cached state reset") end
     end
     controller = pc
     return true
@@ -245,8 +260,10 @@ local function snapshot()
     previousHealth, previousStamina = health, stamina
     local needed = health < config.healthThreshold or stamina < config.staminaThreshold
         or now < healthUntil or now < staminaUntil
+    if D.enabled then D.vitals(health,stamina,needed,now,healthUntil,staminaUntil) end
     return needed and 1 or 0
 end
+snapshot=D.wrap("sample",snapshot)
 local function step()
     -- At most one hook registration OR one state snapshot OR one direct panel
     -- read/write per callback. 16 ms delay yields to a later game frame.
@@ -305,6 +322,8 @@ local function step()
                 candidate=nil
             end
         end
+        fullJob, fullPending = fullPending, false
+        jobNames = fullJob and names or statNames
         -- Stat-only wakes already have a fresh sampler result. Do not sample
         -- twice or revisit unrelated HUD panels on every show/hide transition.
         if fullJob then
@@ -317,8 +336,6 @@ local function step()
                 stateReady, desired = false, 0
             end
         end
-        fullJob, fullPending = fullPending, false
-        jobNames = fullJob and names or statNames
         cursor=1
         return false
     end
@@ -339,7 +356,10 @@ local function step()
                 end
                 local isStats = name == "HumanStats" or name == "VampireStats"
                 local target = isStats and desired == 1 and entry.original or 0
-                if current ~= target then object:SetRenderOpacity(target) end
+                if current ~= target then
+                    object:SetRenderOpacity(target)
+                    if D.enabled then D.count("panelWrites");D.event("panel","name=%s opacity=%.3f->%.3f",name,current,target) end
+                end
             elseif attempts < 120 then
                 attempts=attempts+1
                 return false
@@ -347,6 +367,7 @@ local function step()
                 -- Missing fields stay absent until a lifecycle/preset event.
                 -- Resource changes must not restart readiness retries.
                 absent[name]=true
+                if D.enabled then D.event("missing","panel=%s; retries exhausted",name) end
             end
         else
             hud, world, panels = nil, nil, {}
@@ -361,16 +382,25 @@ local function step()
     if stateReady then startMonitor() end
     return true -- the panel worker stops; only the bounded stat sampler remains
 end
+step=D.wrap("worker",step)
+-- UE4SS repeating timers ignore return values. Chain one-shots explicitly.
+local function repeatUntilDone(delay,fn)
+    local function tick()
+        if not fn() then ExecuteInGameThreadWithDelay(delay,tick) end
+    end
+    ExecuteInGameThreadWithDelay(delay,tick)
+end
 wake = function(statsOnly)
     if not statsOnly then
         fullPending=true
         absent={}
     end
     if statsOnly~="marker" then dirty=true end
-    if worker then return end
+    if worker then if D.enabled then D.count("workerCoalesced") end; return end
     worker=true
+    if D.enabled then D.count("workerStarts") end
     attempts=0
-    LoopInGameThreadWithDelay(16, function()
+    repeatUntilDone(16, function()
         local success, stop = pcall(function()
             if not valid(frameClock) then
                 frameClock=StaticFindObject("/Script/Engine.Default__KismetSystemLibrary")
@@ -417,10 +447,10 @@ startMonitor = function()
     if monitoring then return end
     monitoring=true
     local ownedHUD, ownedController = hud, controller
-    LoopInGameThreadWithDelay(100, function()
+    repeatUntilDone(100, function()
         -- At low frame rates both timers may expire on every frame. Let a
         -- pending panel job finish rather than letting the sampler starve it.
-        if worker then return false end
+        if worker then if D.enabled then D.count("sampleDeferred") end; return false end
         if hud ~= ownedHUD or controller ~= ownedController then
             monitoring=false
             wake()
@@ -437,6 +467,7 @@ startMonitor = function()
         if not success or value == nil then
             monitoring=false
             stateReady=false
+            if D.enabled then D.event("lifecycle","sampler stopped: player/stat context unavailable") end
             desired=1 -- leave the stat panel available if reading it fails
             wake()
             return true

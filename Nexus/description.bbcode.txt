@@ -22,3 +22,5 @@ Dawnwalker-compatible UE4SS with delayed game-thread callbacks and Kismet frame/
 
 [b]Configuration and license[/b]
 QuietDawnConfig.lua contains thresholds and hold durations; restart after editing. MIT licensed. No game assets or loader binaries included.
+
+Optional personal INI debug logging reports visibility changes and bounded timing summaries. See the included README and INI example. Logging is off by default.

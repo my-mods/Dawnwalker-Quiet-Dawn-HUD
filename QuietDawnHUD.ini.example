@@ -1,0 +1,7 @@
+; Copy to %LOCALAPPDATA%/Dawnwalker/Saved/Config/QuietDawnHUD.ini
+; Personal settings are read once at startup. Restart after editing.
+[Debug]
+Enabled=false
+SummarySeconds=10
+SlowCallbackMs=2
+MaxEventsPerSecond=6
