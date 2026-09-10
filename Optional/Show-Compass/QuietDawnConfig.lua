@@ -9,6 +9,9 @@ return {
     staminaThreshold = 0.20,
     healthHoldSeconds = 4.0,
     staminaHoldSeconds = 1.5,
+    -- Hold the game's Controls Legend button (Menu/Options on controller).
+    manualPeek = true,
+    manualPeekSeconds = 3.0,
     -- Other listed panels stay hidden, including during combat and focus.
     -- Enemy health bars are hidden separately; directional cues respect the menu setting.
     panels = {"HumanStats", "VampireStats", "WBP_Compass", "WBP_HUD_QuestInfo",

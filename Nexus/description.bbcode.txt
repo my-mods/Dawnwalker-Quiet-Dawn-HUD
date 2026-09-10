@@ -9,7 +9,7 @@ The neutral lock-on marker is hidden when directional indicators are disabled. E
 [b]Health and stamina[/b]
 Both bars appear together at full opacity for 4 seconds after health/blood loss or 1.5 seconds after stamina use. Further drops refresh the relevant delay. Health strictly below 50% or stamina strictly below 20% keeps both bars visible. Vampire health follows the blood bar; human health follows HP. Regeneration alone does not refresh the timer. Resource-change events update the bars, with no recurring stat checks, global object searches, or widget-tree walks. The hide deadline uses cached values.
 
-Compass, quest tracker, quickslots, crosshair, control legend, buffs, ability cooldowns, focus HUD, special-attack cooldown, and XP stay hidden. Interaction prompts, dialogue, subtitles, notifications, and menus retain normal game behavior. No whole-HUD reveal shortcut.
+Compass, quest tracker, quickslots, crosshair, control legend, buffs, ability cooldowns, focus HUD, special-attack cooldown, and XP stay hidden. Interaction prompts, dialogue, subtitles, notifications, and menus retain normal game behavior. Hold the Controls Legend button (Menu/Options on standard controller layouts) for a 3-second player HUD peek. The peek temporarily shows the compass, quests, quickslots, controls, buffs, cooldowns and other managed player panels. Low health remains visible afterward. Enemy health bars and disabled directional indicators retain their configured behavior.
 
 [b]Optional Show Compass version[/b]
 Quiet-Dawn-HUD-Show-Compass.zip is a complete alternative that shows the compass at 50% opacity. Install only one version; both archives use the same runtime paths.
@@ -21,6 +21,6 @@ Close the game. Disable HUD Tweaks and HUD Tweaks - Fixes in Vortex and deploy. 
 Dawnwalker-compatible UE4SS with delayed game-thread callbacks and Kismet frame/game-time functions. Reference game build: 25191761. Native game visibility restrictions remain in effect.
 
 [b]Configuration and license[/b]
-QuietDawnConfig.lua contains thresholds and hold durations; restart after editing. MIT licensed. No game assets or loader binaries included.
+QuietDawnConfig.lua contains thresholds, hold durations, manualPeek and manualPeekSeconds; restart after editing. MIT licensed. No game assets or loader binaries included.
 
 Optional personal INI debug logging reports visibility changes and bounded timing summaries. See the included README and INI example. Logging is off by default.

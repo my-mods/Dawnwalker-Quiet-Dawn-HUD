@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a 3-second full player HUD peek on the existing Controls Legend hold gesture (Menu/Options on standard controller layouts). Refresh on another hold and restore automatic visibility afterward, keeping low health visible.
+
 - Show health alerts at full opacity, including when the stat panels start transparent. Keep health visible below 50% and extend health/blood-loss reveals to 4 seconds; stamina retains its 20% threshold and 1.5-second delay.
 - Follow the blood bar in vampire form and HP in human form. Handle overdrinking, form changes and blood-bar capacity changes.
 - Listen to the stat widgets' actual update functions as well as resource event handlers, covering direct event-graph updates without polling.

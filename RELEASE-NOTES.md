@@ -2,6 +2,8 @@
 
 Health and stamina now respond to resource-change events and the stat widgets' update functions without recurring stat checks. Alerts remain readable when stat panels were transparent during initialization. A cached-state deadline preserves the hide delay and rapid loss/recovery events.
 
+Hold the Controls Legend button (Menu/Options on standard controller layouts) for a 3-second full player HUD peek. Repeating the gesture refreshes the timer. The peek restores automatic hiding afterward while retaining low-health alerts and the configured enemy HUD behavior.
+
 The optional Show Compass variant displays the compass at 50% opacity. Standard and optional variants share the same HUD behavior and runtime code.
 
 Combat, weapon draw, lock-on, and focus keep the general HUD hidden. Health and stamina appear together at full opacity for 4 seconds after health/blood loss or 1.5 seconds after stamina use. Health below 50% or stamina below 20% keeps them visible. Vampire alerts follow blood-bar fill, including after changing form or blood-bar capacity.

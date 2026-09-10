@@ -38,7 +38,10 @@ for _, key in ipairs({"healthThreshold", "staminaThreshold"}) do
         return
     end
 end
-for _, key in ipairs({"healthHoldSeconds", "staminaHoldSeconds"}) do
+if config.manualPeek==nil then config.manualPeek=true end
+if config.manualPeekSeconds==nil then config.manualPeekSeconds=3.0 end
+if type(config.manualPeek)~="boolean" then return end
+for _, key in ipairs({"healthHoldSeconds", "staminaHoldSeconds", "manualPeekSeconds"}) do
     local value=config[key]
     if type(value) ~= "number" or value ~= value or value < 0 or value > 60 then
         print("[Quiet Dawn HUD] Invalid hold duration; disabled.")
@@ -50,6 +53,7 @@ local statNames = {}
 for _, name in ipairs(names) do
     if name == "HumanStats" or name == "VampireStats" then statNames[#statNames+1]=name end
 end
+local manualPeekEnabled=config.manualPeek and config.manualPeekSeconds>0 and #statNames>0
 if type(ExecuteInGameThreadWithDelay) ~= "function" or type(CancelDelayedAction) ~= "function" then
     print("[Quiet Dawn HUD] Requires cancellable delayed game-thread callbacks; disabled.")
     return
@@ -66,6 +70,9 @@ local expiryHandle,expiryDue,expiryHUD,expiryController,expiryPawn
 local healthDropped, staminaDropped = false, false
 local statHookFailures, statHookAttempt = false, 0
 local firstFailedStatHook
+local firstFailedPeekHook
+local peekRequested,peekUntil,peekVisible=false,0,false
+local peekWidgetAddress,peekControllerAddress
 local lastPawnAddress, lastCombatAddress, lastBloodAddress, lastForm, previousHealth, previousStamina
 local previousHealthAmount
 local healthUntil, staminaUntil = 0, 0
@@ -118,6 +125,22 @@ end
 -- Both helpers are reached from resource/initialization events, never Tick.
 local function statUpdate(field)
     return statEvent("refresh",field)
+end
+-- The stock Controls Legend action already handles the Menu/Options hold.
+-- Its button click enters this graph at 850 (Steam build 25191761). Filter
+-- before object access: entry activation/cinematic events must never reveal.
+-- This widget has no Tick event; no button-state sampling or remapping is used.
+local LEGEND="/Game/_Dawnwalker/UI/_Unified/HUD/ControlsLegend/WBP_ControlsLegend.WBP_ControlsLegend_C"
+local function peekInput(context,entryParam)
+    if tonumber(unwrap(entryParam))~=850 then return end
+    local object=unwrap(context)
+    -- The accepted HUD owns this cached widget. The worker revalidates the
+    -- HUD/controller/world before using the request, keeping input work tiny.
+    if peekControllerAddress~=controllerAddress or not valid(object)
+        or object:GetAddress()~=peekWidgetAddress then return end
+    peekRequested,statsPending=true,true
+    if D.debugLogging then D.count("manualPeekRequests") end
+    wake("resource")
 end
 -- The game shares this widget between neutral lock-on, directions and cues.
 -- Hide neutral and directional cues when directions are disabled.
@@ -418,6 +441,9 @@ if #statNames>0 then
     }) do
         specs[#specs+1]={STAT_ROOT..entry[1].."."..entry[1].."_C:"..entry[2],statUpdate(entry[3]),false,true}
     end
+    if manualPeekEnabled then
+        specs[#specs+1]={LEGEND..":ExecuteUbergraph_WBP_ControlsLegend",peekInput,false,false,true}
+    end
 end
 local function noop() end
 local function registerOne()
@@ -436,12 +462,17 @@ local function registerOne()
         statHookAttempt=0
         if D.debugLogging then D.event("hook","registered=%s",spec[1]) end
     end
-    if not (success and type(pre)=="number" and type(post)=="number") and spec[4] then
+    if not (success and type(pre)=="number" and type(post)=="number") and (spec[4] or spec[5]) then
         statHookAttempt=statHookAttempt+1
         if statHookAttempt>=12 then
-            statHookFailures=true
-            firstFailedStatHook=firstFailedStatHook or hookIndex
-            print("[Quiet Dawn HUD] Resource event hook unavailable; stat panels left to the game: "..spec[1])
+            if spec[5] then
+                firstFailedPeekHook=firstFailedPeekHook or hookIndex
+                print("[Quiet Dawn HUD] Manual peek input unavailable; automatic health alerts remain enabled.")
+            else
+                statHookFailures=true
+                firstFailedStatHook=firstFailedStatHook or hookIndex
+                print("[Quiet Dawn HUD] Resource event hook unavailable; stat panels left to the game: "..spec[1])
+            end
             hookIndex=hookIndex+1
             statHookAttempt=0
         end
@@ -463,12 +494,18 @@ local function accept(object)
         lastBloodAddress,lastForm=nil,nil
         previousHealthAmount=nil
         healthUntil, staminaUntil = 0, 0
+        peekRequested,peekUntil,peekVisible=false,0,false
         statsRefresh=true
         healthDropped,staminaDropped=false,false
         if D.debugLogging then D.event("lifecycle","HUD/world changed; cached state reset") end
     end
     controller = pc
     hudAddress, controllerAddress = object:GetAddress(), pc:GetAddress()
+    if manualPeekEnabled then
+        local legend=object.WBP_ControlsLegend
+        peekWidgetAddress=valid(legend) and legend:GetAddress() or nil
+        peekControllerAddress=controllerAddress
+    end
     return true
 end
 local function snapshot()
@@ -512,6 +549,8 @@ local function snapshot()
         previousHealth, previousStamina = nil, nil
         previousHealthAmount=nil
         healthUntil, staminaUntil = 0, 0
+        if peekVisible then fullPending,dirty=true,true end
+        peekUntil,peekVisible=0,false
         lastPawnAddress, lastCombatAddress = pawnAddress, combatAddress
     end
     if lastForm~=form or lastBloodAddress~=bloodAddress then
@@ -528,10 +567,16 @@ local function snapshot()
         staminaUntil = now + config.staminaHoldSeconds
     end
     healthDropped,staminaDropped=false,false
+    if peekRequested then
+        peekUntil=now+config.manualPeekSeconds
+        if not peekVisible then fullPending,dirty=true,true end
+        peekVisible=true
+        if D.debugLogging then D.event("manualPeek","player HUD visible for %.1fs",config.manualPeekSeconds) end
+    end
     previousHealth, previousStamina = health, stamina
     previousHealthAmount=healthAmount
     local needed = health < config.healthThreshold or stamina < config.staminaThreshold
-        or now < healthUntil or now < staminaUntil
+        or now < healthUntil or now < staminaUntil or now < peekUntil
     if D.debugLogging then D.vitals(health,stamina,needed,now,healthUntil,staminaUntil) end
     return needed and 1 or 0
 end
@@ -573,6 +618,7 @@ local function step()
         statsPending=false
         local wasReady=stateReady
         local success,value=pcall(snapshot)
+        peekRequested=false
         stateReady=success and value~=nil
         if not stateReady then healthDropped,staminaDropped=false,false end
         local target=stateReady and value or 1
@@ -621,6 +667,7 @@ local function step()
             if #statNames > 0 and statsRefresh then
                 statsRefresh=false
                 local success, value = pcall(snapshot)
+                peekRequested=false
                 stateReady = success and value ~= nil
                 desired = stateReady and value or 1
             elseif #statNames==0 then
@@ -645,11 +692,15 @@ local function step()
                     entry = {object=object, original=current}
                     panels[name]=entry
                 end
+                if manualPeekEnabled and name=="WBP_ControlsLegend" then
+                    peekWidgetAddress,peekControllerAddress=object:GetAddress(),controllerAddress
+                end
                 local isStats = name == "HumanStats" or name == "VampireStats"
                 -- Alerts must not restore a transparent initialization value.
                 -- Unknown readings still restore the original game opacity.
                 local target = isStats and desired == 1 and (stateReady and 1 or entry.original) or 0
                 if name=="WBP_Compass" and config.compassOpacity~=nil then target=config.compassOpacity end
+                if peekVisible then target=1 end
                 if current ~= target then
                     object:SetRenderOpacity(target)
                     if D.debugLogging then D.count("panelWrites");D.event("panel","name=%s opacity=%.3f->%.3f",name,current,target) end
@@ -666,6 +717,7 @@ local function step()
         else
             hud, world, panels = nil, nil, {}
             hudAddress=nil
+            peekWidgetAddress,peekControllerAddress=nil,nil
         end
         cursor=cursor+1
         return false
@@ -687,8 +739,12 @@ local function repeatUntilDone(delay,fn)
 end
 wake = function(statsOnly)
     if not statsOnly then
+        if firstFailedPeekHook then
+            hookIndex=math.min(hookIndex,firstFailedPeekHook)
+            firstFailedPeekHook=nil
+        end
         if firstFailedStatHook then
-            hookIndex=firstFailedStatHook
+            hookIndex=math.min(hookIndex,firstFailedStatHook)
             firstFailedStatHook=nil
             statHookFailures=false
             statsRefresh=true
@@ -754,11 +810,16 @@ end
 -- At most one outstanding hide deadline. It reads cached percentages and the
 -- game clock only. A pause/extended hold reschedules its remaining delay; once
 -- settled or below threshold there is no timer and no resource polling.
+-- A full-HUD peek expires independently of low health, then the same deadline
+-- can finish any longer damage/stamina hold without hiding the low-health bar.
 armExpiry = function()
     local now=valid(frameClock) and valid(controller) and frameClock:GetGameTimeInSeconds(controller) or nil
     local eligible=now and stateReady and previousHealth and previousStamina
         and previousHealth>=config.healthThreshold and previousStamina>=config.staminaThreshold
-    local remaining=eligible and math.max(healthUntil,staminaUntil)-now or 0
+    local remaining=now and peekVisible and math.max(0,peekUntil-now)
+        or (eligible and math.max(healthUntil,staminaUntil)-now or 0)
+    -- A completed peek still needs one callback to restore the hidden panels.
+    if peekVisible and now and remaining<=0 then remaining=0.016 end
     if expiryPending then
         local sameOwner=expiryHUD==hudAddress and expiryController==controllerAddress and expiryPawn==lastPawnAddress
         if remaining>0 and sameOwner and expiryDue<=now+remaining then return end
@@ -778,11 +839,20 @@ armExpiry = function()
         end
         if not valid(hud) or not valid(controller) or not valid(frameClock)
             or not sameObject(hud:GetWorld(),world) or not sameObject(hud:GetOwningPlayer(),controller) then return end
-        if not stateReady or not previousHealth or not previousStamina then return end
-        if previousHealth<config.healthThreshold or previousStamina<config.staminaThreshold then return end
-        local remaining=math.max(healthUntil,staminaUntil)-frameClock:GetGameTimeInSeconds(controller)
-        if remaining>0 then armExpiry();return end
-        if desired~=0 then desired=0;wake(true) end
+        local now=frameClock:GetGameTimeInSeconds(controller)
+        if peekVisible and now<peekUntil then armExpiry();return end
+        local endedPeek=peekVisible
+        if endedPeek then
+            peekVisible=false
+            fullPending=true
+            if D.debugLogging then D.event("manualPeek","ended; automatic HUD visibility restored") end
+        end
+        local needed=not stateReady or (previousHealth and previousHealth<config.healthThreshold)
+            or (previousStamina and previousStamina<config.staminaThreshold)
+            or now<healthUntil or now<staminaUntil
+        local target=needed and 1 or 0
+        if endedPeek or desired~=target then desired=target;wake(true)
+        else armExpiry() end
     end)
 end
 wake()
