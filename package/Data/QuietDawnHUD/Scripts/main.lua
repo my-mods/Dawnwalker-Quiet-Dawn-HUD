@@ -66,7 +66,8 @@ local expiryHandle,expiryDue,expiryHUD,expiryController,expiryPawn
 local healthDropped, staminaDropped = false, false
 local statHookFailures, statHookAttempt = false, 0
 local firstFailedStatHook
-local lastPawnAddress, lastCombatAddress, previousHealth, previousStamina
+local lastPawnAddress, lastCombatAddress, lastBloodAddress, lastForm, previousHealth, previousStamina
+local previousHealthAmount
 local healthUntil, staminaUntil = 0, 0
 local panels = {}
 local absent, jobNames, fullPending, fullJob = {}, names, false, true
@@ -93,10 +94,14 @@ local STAT_ROOT = "/Game/_Dawnwalker/UI/_Unified/HUD/PlayerStatPanel/"
 local function statEvent(kind, field)
     return function(context, newParam, oldParam)
         if #statNames==0 then return end
+        if D.debugLogging then D.count("resourceCallbacks") end
         local object=unwrap(context)
         if not valid(hud) or not valid(object) or not sameObject(hud[field],object)
             or not valid(controller) or not sameObject(object:GetOwningPlayer(),controller)
-            or not sameObject(object:GetWorld(),world) then return end
+            or not sameObject(object:GetWorld(),world) then
+            if D.debugLogging then D.count("resourceOwnerRejected") end
+            return
+        end
         local new, old=tonumber(unwrap(newParam)),tonumber(unwrap(oldParam))
         if new and old and new==old then return end
         -- Retain a drop even if a second event restores the value before the worker.
@@ -107,6 +112,12 @@ local function statEvent(kind, field)
         if D.debugLogging then D.count("resourceEvents") end
         wake("resource")
     end
+end
+-- Hook the real update functions as well as custom event stubs. Native
+-- Blueprint event dispatch can enter the event graph without running a stub.
+-- Both helpers are reached from resource/initialization events, never Tick.
+local function statUpdate(field)
+    return statEvent("refresh",field)
 end
 -- The game shares this widget between neutral lock-on, directions and cues.
 -- Hide neutral and directional cues when directions are disabled.
@@ -389,6 +400,7 @@ local specs = {
     {ROOT..":Construct", capture},
     {ROOT..":BP_OnActivated", capture},
     {ROOT..":On Coen Form Changed", capture},
+    {ROOT..":Update Shown Stat Bar", capture},
     {"/Script/RebelSettings.RebelGameUserSettings:SetSetting", refreshSettings, true},
     {"/Script/RebelSettings.RebelGameUserSettings:SetSettingAsBool", refreshSettings, true},
 }
@@ -399,6 +411,12 @@ if #statNames>0 then
         {"WBP_HUD_VampireStats", "On Stamina changed", "stamina", "VampireStats"},
     }) do
         specs[#specs+1]={STAT_ROOT..entry[1].."."..entry[1].."_C:"..entry[2],statEvent(entry[3],entry[4]),false,true}
+    end
+    for _,entry in ipairs({
+        {"WBP_HUD_HumanStats", "UpdateHealthBar", "HumanStats"},
+        {"WBP_HUD_VampireStats", "Update Blood", "VampireStats"},
+    }) do
+        specs[#specs+1]={STAT_ROOT..entry[1].."."..entry[1].."_C:"..entry[2],statUpdate(entry[3]),false,true}
     end
 end
 local function noop() end
@@ -418,7 +436,7 @@ local function registerOne()
         statHookAttempt=0
         if D.debugLogging then D.event("hook","registered=%s",spec[1]) end
     end
-    if not success and spec[4] then
+    if not (success and type(pre)=="number" and type(post)=="number") and spec[4] then
         statHookAttempt=statHookAttempt+1
         if statHookAttempt>=12 then
             statHookFailures=true
@@ -442,6 +460,8 @@ local function accept(object)
     if not sameObject(object,hud) or not sameObject(objectWorld,world) then
         hud, world, panels, absent = object, objectWorld, {}, {}
         lastPawnAddress, lastCombatAddress, previousHealth, previousStamina = nil, nil, nil, nil
+        lastBloodAddress,lastForm=nil,nil
+        previousHealthAmount=nil
         healthUntil, staminaUntil = 0, 0
         statsRefresh=true
         healthDropped,staminaDropped=false,false
@@ -453,15 +473,36 @@ local function accept(object)
 end
 local function snapshot()
     if statHookFailures then return nil end
-    if not valid(hud) or not valid(controller) or not valid(world) then return nil end
+    if not valid(hud) or not valid(controller) then return nil end
     if not sameObject(hud:GetWorld(),world) or not sameObject(controller:GetWorld(),world)
         or not sameObject(hud:GetOwningPlayer(),controller) then return nil end
     local pawn = controller.Pawn
     if not valid(pawn) or not sameObject(pawn:GetWorld(),world) then return nil end
     local combat = pawn.CombatComponent
     if not valid(combat) then return nil end
-    -- No component search, arrays, or borrowed attribute structures.
-    local health = tonumber(combat:GetHealthPercentage())
+    -- Match the resource displayed by the game's active stat widget.
+    -- Form 0/1 and PlayerState.BloodBar are verified in the stock HUD.
+    local form=tonumber(pawn.Form)
+    local health,bloodAddress,healthAmount
+    if form==0 then
+        health=tonumber(combat:GetHealthPercentage())
+        healthAmount=health
+    elseif form==1 then
+        local playerState=controller.PlayerState
+        if not valid(playerState) then return nil end
+        local blood=playerState.BloodBar
+        if not valid(blood) then return nil end
+        local amount=tonumber(blood:GetBlood())
+        local capacity=tonumber(blood:GetBloodBarLength())
+        if not amount or not capacity or amount~=amount or capacity~=capacity
+            or amount<0 or amount==math.huge or capacity<=0 or capacity==math.huge then return nil end
+        -- Overdrinking can exceed the normal bar; it is not invalid health.
+        health=math.min(1,amount/capacity)
+        healthAmount=amount
+        bloodAddress=blood:GetAddress()
+    else
+        return nil -- unknown/transitional forms retain game control
+    end
     local stamina = tonumber(combat:GetStaminaPercentage())
     if not health or not stamina or health ~= health or stamina ~= stamina
         or health < 0 or stamina < 0 or health > 1 or stamina > 1 then return nil end
@@ -469,10 +510,18 @@ local function snapshot()
     local pawnAddress, combatAddress=pawn:GetAddress(), combat:GetAddress()
     if lastPawnAddress~=pawnAddress or lastCombatAddress~=combatAddress then
         previousHealth, previousStamina = nil, nil
+        previousHealthAmount=nil
         healthUntil, staminaUntil = 0, 0
         lastPawnAddress, lastCombatAddress = pawnAddress, combatAddress
     end
-    if healthDropped or (previousHealth and health < previousHealth - 0.000001) then
+    if lastForm~=form or lastBloodAddress~=bloodAddress then
+        previousHealth=nil
+        previousHealthAmount=nil
+        healthUntil=0
+        lastForm,lastBloodAddress=form,bloodAddress
+        if D.debugLogging then D.event("resourceSource","form=%d source=%s",form,form==1 and "blood" or "health") end
+    end
+    if healthDropped or (previousHealthAmount and healthAmount < previousHealthAmount - 0.000001) then
         healthUntil = now + config.healthHoldSeconds
     end
     if staminaDropped or (previousStamina and stamina < previousStamina - 0.000001) then
@@ -480,6 +529,7 @@ local function snapshot()
     end
     healthDropped,staminaDropped=false,false
     previousHealth, previousStamina = health, stamina
+    previousHealthAmount=healthAmount
     local needed = health < config.healthThreshold or stamina < config.staminaThreshold
         or now < healthUntil or now < staminaUntil
     if D.debugLogging then D.vitals(health,stamina,needed,now,healthUntil,staminaUntil) end
@@ -521,11 +571,12 @@ local function step()
     -- Coalesce resource events; no timer requests resource reads.
     if statsPending and candidate==nil and cursor==0 and not dirty then
         statsPending=false
+        local wasReady=stateReady
         local success,value=pcall(snapshot)
         stateReady=success and value~=nil
         if not stateReady then healthDropped,staminaDropped=false,false end
         local target=stateReady and value or 1
-        if target~=desired then desired=target;dirty=true end
+        if target~=desired or wasReady~=stateReady then desired=target;dirty=true end
         armExpiry()
         return false
     end
@@ -595,7 +646,9 @@ local function step()
                     panels[name]=entry
                 end
                 local isStats = name == "HumanStats" or name == "VampireStats"
-                local target = isStats and desired == 1 and entry.original or 0
+                -- Alerts must not restore a transparent initialization value.
+                -- Unknown readings still restore the original game opacity.
+                local target = isStats and desired == 1 and (stateReady and 1 or entry.original) or 0
                 if name=="WBP_Compass" and config.compassOpacity~=nil then target=config.compassOpacity end
                 if current ~= target then
                     object:SetRenderOpacity(target)

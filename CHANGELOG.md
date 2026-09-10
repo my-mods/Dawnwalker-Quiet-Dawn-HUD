@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Show health alerts at full opacity, including when the stat panels start transparent. Keep health visible below 50% and extend health/blood-loss reveals to 4 seconds; stamina retains its 20% threshold and 1.5-second delay.
+- Follow the blood bar in vampire form and HP in human form. Handle overdrinking, form changes and blood-bar capacity changes.
+- Listen to the stat widgets' actual update functions as well as resource event handlers, covering direct event-graph updates without polling.
+
 - Replace periodic health/stamina checks with resource-change hooks and a cached-state hide deadline. Preserve rapid loss/recovery events and stop all resource timers after the hold settles.
 
 - Read the actual Directional Indicator menu setting instead of the widget's separate internal display toggle. Refresh cached markers on setting changes so enabling indicators restores a previously hidden widget.

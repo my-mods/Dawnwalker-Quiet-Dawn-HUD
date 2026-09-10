@@ -3,10 +3,10 @@
   <info>
     <name>Quiet Dawn HUD - Auto-hide HUD</name>
     <modid>QuietDawnHUD</modid>
-    <description>Quiet combat HUD with combined health/stamina reveal after resource loss for 1.5 seconds or below 20%. Native enemy health and difficulty-controlled indicators.</description>
+    <description>Quiet HUD with full-opacity health alerts below 50% or for 4 seconds after HP/blood loss. Stamina reveals below 20% or for 1.5 seconds after use. Enemy health bars hidden; directional indicators follow the menu setting.</description>
     <author>my-mods</author>
     <version>0.0.0</version>
     <created_on>2026-09-06</created_on>
   </info>
-  <supports><game>The Blood of Dawnwalker</game><steam_build>25129649</steam_build><loader>Dawnwalker-compatible UE4SS with delayed game-thread callbacks</loader></supports>
+  <supports><game>The Blood of Dawnwalker</game><steam_build>25191761</steam_build><loader>Dawnwalker-compatible UE4SS with delayed game-thread callbacks</loader></supports>
 </mod>

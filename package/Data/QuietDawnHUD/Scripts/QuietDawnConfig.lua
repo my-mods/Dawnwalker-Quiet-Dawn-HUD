@@ -3,9 +3,9 @@
 return {
     enabled = true,
     -- Both stat panels show together when either resource needs attention.
-    healthThreshold = 0.20, -- strictly below 20 percent
+    healthThreshold = 0.50, -- strictly below 50 percent; vampire form uses blood
     staminaThreshold = 0.20,
-    healthHoldSeconds = 1.5,
+    healthHoldSeconds = 4.0,
     staminaHoldSeconds = 1.5,
     -- Other listed panels stay hidden, including during combat and focus.
     -- Enemy health bars are hidden separately; directional cues respect the menu setting.

@@ -12,6 +12,6 @@
   {
     "type": "attribute",
     "key": "description",
-    "value": "Quiet combat HUD with combined health/stamina reveal after resource loss for 1.5 seconds or below 20%. Native enemy health and difficulty-controlled indicators."
+    "value": "Quiet HUD with full-opacity health alerts below 50% or for 4 seconds after HP/blood loss. Stamina reveals below 20% or for 1.5 seconds after use. Enemy health bars hidden; directional indicators follow the menu setting."
   }
 ]

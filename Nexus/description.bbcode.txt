@@ -7,7 +7,7 @@ Combat, drawing a weapon, lock-on, and focus do not reveal the general HUD. Ordi
 The neutral lock-on marker is hidden when directional indicators are disabled. Enabling directional indicators restores the shared widget, including its neutral directional display. Attack-direction and parry-direction cues stay hidden when directional indicators are disabled. Unblockable and weak-spot cues retain the shared widget while preserving game visibility rules. No difficulty settings are changed. Marker changes use events rather than a new polling timer.
 
 [b]Health and stamina[/b]
-Both bars appear together after damage or stamina use, then hide 1.5 seconds after the last resource drop. Further drops refresh the delay. Either resource strictly below 20% keeps both bars visible. Regeneration alone does not refresh the timer. Resource-change events update the bars, with no recurring stat checks, global object searches, or widget-tree walks. The hide deadline uses cached values.
+Both bars appear together at full opacity for 4 seconds after health/blood loss or 1.5 seconds after stamina use. Further drops refresh the relevant delay. Health strictly below 50% or stamina strictly below 20% keeps both bars visible. Vampire health follows the blood bar; human health follows HP. Regeneration alone does not refresh the timer. Resource-change events update the bars, with no recurring stat checks, global object searches, or widget-tree walks. The hide deadline uses cached values.
 
 Compass, quest tracker, quickslots, crosshair, control legend, buffs, ability cooldowns, focus HUD, special-attack cooldown, and XP stay hidden. Interaction prompts, dialogue, subtitles, notifications, and menus retain normal game behavior. No whole-HUD reveal shortcut.
 
@@ -18,7 +18,7 @@ Quiet-Dawn-HUD-Show-Compass.zip is a complete alternative that shows the compass
 Close the game. Disable HUD Tweaks and HUD Tweaks - Fixes in Vortex and deploy. Import the chosen ZIP, select UE4SS (Lua mods), enable and deploy, then restart. Back up configuration before replacing the existing entry: configuration is replaced in full, not merged. Remove through Vortex with the game closed.
 
 [b]Requirements and status[/b]
-Dawnwalker-compatible UE4SS with delayed game-thread callbacks and Kismet frame/game-time functions. Reference game build: 25129649. Native game visibility restrictions remain in effect.
+Dawnwalker-compatible UE4SS with delayed game-thread callbacks and Kismet frame/game-time functions. Reference game build: 25191761. Native game visibility restrictions remain in effect.
 
 [b]Configuration and license[/b]
 QuietDawnConfig.lua contains thresholds and hold durations; restart after editing. MIT licensed. No game assets or loader binaries included.
