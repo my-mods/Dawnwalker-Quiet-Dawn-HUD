@@ -109,7 +109,7 @@ local function statEvent(kind, field)
     end
 end
 -- The game shares this widget between neutral lock-on, directions and cues.
--- Hide neutral only when directions are disabled; never change game settings.
+-- Hide neutral and directional cues when directions are disabled.
 local MARKER = "/Game/_Dawnwalker/UI/_Unified/Combat/WBP_CombatTargetIndicator.WBP_CombatTargetIndicator_C"
 local markerSpecs = {"Construct", "OnObservedStubIconTypeChanged",
     "NotifyIndicatorCleared", "EnableHardLock", "RefreshIndicatorsVisibility",
@@ -240,7 +240,8 @@ local function markerStep()
         return
     end
     -- This Blueprint property is updated by the game's directional and
-    -- non-directional display paths. 0=Defending (neutral); 1..13 are cues.
+    -- non-directional display paths. Current build 25191761: 0=neutral,
+    -- 1..8=attack/parry directions, 9=unblockable, 10..13=weak spots.
     -- Preserve the entire widget whenever the actual menu option enables cues.
     -- Unknown settings fail open so an unreadable option cannot suppress them.
     local readable,icon=pcall(function() return tonumber(object["Currently Displayed Icon Type"]) end)
@@ -262,7 +263,7 @@ local function markerStep()
         if job.retries<8 then queueMarker(object,job.retries+1) end
         return
     end
-    if icon==0 and not directionsEnabled then
+    if icon>=0 and icon<=8 and icon%1==0 and not directionsEnabled then
         if not entry.hidden or current~=0 then entry.original=current end
         if current~=0 then
             object:SetRenderOpacity(0)

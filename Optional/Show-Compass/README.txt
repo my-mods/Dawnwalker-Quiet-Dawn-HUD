@@ -8,7 +8,7 @@ A quiet view of the world, with health and stamina returning when needed.
 For **The Blood of Dawnwalker**. Combat, drawing a weapon, lock-on, and focus no longer reveal the general HUD.
 
 - **Enemy health:** normal game behavior, always exempt from this mod's hiding.
-- **Enemy lock-on marker:** hidden in its neutral state when directional indicators are disabled. Enabling directional indicators restores the shared widget, including its neutral directional display. The shared widget is also restored for active attack, parry-window, unblockable-attack, or weak-spot cues; game visibility and difficulty restrictions remain in effect. Unknown states are left visible rather than suppressing a possible warning.
+- **Enemy lock-on marker:** hidden in its neutral state when directional indicators are disabled. Enabling directional indicators restores the shared widget, including its neutral directional display. Attack-direction and parry-direction cues stay hidden while directional indicators are disabled. Unblockable-attack and weak-spot cues retain the shared widget; game visibility rules remain in effect. Unknown states are left visible rather than suppressing a possible warning.
 - **Player health and stamina:** shown together when either value drops, or either is strictly below **20%**.
 - **Hide delay:** **1.5 seconds** after the last damage or stamina drop. Further drops restart the relevant delay. Either value below 20% keeps the panel visible; exactly 20% does not qualify by itself.
 - **Parry/attack indicators:** normal game behavior, including difficulty restrictions. This mod never enables disabled indicators.
