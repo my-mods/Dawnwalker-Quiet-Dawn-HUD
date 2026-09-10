@@ -8,7 +8,7 @@ return {
     healthHoldSeconds = 1.5,
     staminaHoldSeconds = 1.5,
     -- Other listed panels stay hidden, including during combat and focus.
-    -- Enemy health stays under game control; directional cues respect the menu setting.
+    -- Enemy health bars are hidden separately; directional cues respect the menu setting.
     panels = {"HumanStats", "VampireStats", "WBP_Compass", "WBP_HUD_QuestInfo",
         "WBP_HUD_Quickslots", "Crosshair", "WBP_AA_Quickslots", "WBP_OpenFocusPrompt",
         "WBP_HUD_Quickslots_ChangePrompt", "WBP_ControlsLegend", "WBP_BuffContainer",

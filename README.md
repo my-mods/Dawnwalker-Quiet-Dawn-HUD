@@ -4,13 +4,13 @@ A quiet view of the world, with health and stamina returning when needed.
 
 For **The Blood of Dawnwalker**. Combat, drawing a weapon, lock-on, and focus no longer reveal the general HUD.
 
-- **Enemy health:** normal game behavior, always exempt from this mod's hiding.
+- **Enemy health:** health bars and their end caps stay hidden for ordinary enemies and bosses, including boss health-phase indicators. Enemy stamina, wounds, names and combat warnings retain game behavior.
 - **Enemy lock-on marker:** hidden in its neutral state when directional indicators are disabled. Enabling directional indicators restores the shared widget, including its neutral directional display. Attack-direction and parry-direction cues stay hidden while directional indicators are disabled. Unblockable-attack and weak-spot cues retain the shared widget; game visibility rules remain in effect. Unknown states are left visible rather than suppressing a possible warning.
 - **Player health and stamina:** shown together when either value drops, or either is strictly below **20%**.
 - **Hide delay:** **1.5 seconds** after the last damage or stamina drop. Further drops restart the relevant delay. Either value below 20% keeps the panel visible; exactly 20% does not qualify by itself.
 - **Parry/attack indicators:** normal game behavior, including difficulty restrictions. This mod never enables disabled indicators.
 
-The compass, quest tracker, quickslots and their change prompt, crosshair, control legend, buffs, ability cooldowns, focus panel/charge, special-attack cooldown, and XP bar stay hidden. Interaction prompts, dialogue, subtitles, notifications, boss bars, and menus retain their game behavior. There is no manual whole-HUD reveal shortcut.
+The compass, quest tracker, quickslots and their change prompt, crosshair, control legend, buffs, ability cooldowns, focus panel/charge, special-attack cooldown, and XP bar stay hidden. Interaction prompts, dialogue, subtitles, notifications, and menus retain their game behavior. There is no manual whole-HUD reveal shortcut.
 
 ## Requirements and compatibility
 
@@ -65,3 +65,5 @@ There are no global HUD searches, widget-tree walks, class-default changes, or r
 ## License
 
 MIT. Standalone code informed by the author's HUD Tweaks - Fixes work and the game's HUD structure. No game assets or UE4SS binaries are included.
+
+Enemy health hiding uses the named health widgets verified in Steam build 25191761. Construction and target/owner changes schedule bounded work on the shared HUD worker, one named child per frame. It does not scan enemies, poll their stats, or change their actual health.

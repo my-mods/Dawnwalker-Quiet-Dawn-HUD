@@ -1,7 +1,7 @@
 [b]Quiet Dawn HUD - Auto-hide HUD[/b]
 A quiet view of the world, with health and stamina returning when needed.
 
-Combat, drawing a weapon, lock-on, and focus do not reveal the general HUD. Enemy health remains controlled by the game. Parry/attack indicators follow the game's difficulty settings; this mod never enables disabled indicators.
+Combat, drawing a weapon, lock-on, and focus do not reveal the general HUD. Ordinary enemy and boss health bars, end caps and boss health-phase indicators stay hidden. Enemy stamina, wounds, names and combat warnings retain game behavior. Parry/attack indicators follow the game's difficulty settings; this mod never enables disabled indicators.
 
 [b]Enemy lock-on marker[/b]
 The neutral lock-on marker is hidden when directional indicators are disabled. Enabling directional indicators restores the shared widget, including its neutral directional display. Attack-direction and parry-direction cues stay hidden when directional indicators are disabled. Unblockable and weak-spot cues retain the shared widget while preserving game visibility rules. No difficulty settings are changed. Marker changes use events rather than a new polling timer.
@@ -9,7 +9,7 @@ The neutral lock-on marker is hidden when directional indicators are disabled. E
 [b]Health and stamina[/b]
 Both bars appear together after damage or stamina use, then hide 1.5 seconds after the last resource drop. Further drops refresh the delay. Either resource strictly below 20% keeps both bars visible. Regeneration alone does not refresh the timer. Resource-change events update the bars, with no recurring stat checks, global object searches, or widget-tree walks. The hide deadline uses cached values.
 
-Compass, quest tracker, quickslots, crosshair, control legend, buffs, ability cooldowns, focus HUD, special-attack cooldown, and XP stay hidden. Interaction prompts, dialogue, subtitles, notifications, boss bars, and menus retain normal game behavior. No whole-HUD reveal shortcut.
+Compass, quest tracker, quickslots, crosshair, control legend, buffs, ability cooldowns, focus HUD, special-attack cooldown, and XP stay hidden. Interaction prompts, dialogue, subtitles, notifications, and menus retain normal game behavior. No whole-HUD reveal shortcut.
 
 [b]Optional Show Compass version[/b]
 Quiet-Dawn-HUD-Show-Compass.zip is a complete alternative that shows the compass at 50% opacity. Install only one version; both archives use the same runtime paths.

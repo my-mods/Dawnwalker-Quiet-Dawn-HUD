@@ -282,6 +282,90 @@ local function markerStep()
 end
 markerStep=D.wrap("marker",markerStep)
 markerHooksStep=D.wrap("hook",markerHooksStep)
+-- Enemy health lives outside WBP_GameHUD. Hide only its health widgets,
+-- keeping stamina, wound information and combat warnings under game control.
+-- Build 25191761: these named children and lifecycle functions are exported
+-- by WBP_CombatCharacterBar and WBP_Combat_BossBar.
+local healthTypes = {
+    {path="/Game/_Dawnwalker/UI/_Unified/Combat/WBP_CombatCharacterBar.WBP_CombatCharacterBar_C",
+     fields={"SegmentedHealthBar","HealthBarLeftCap","HealthBarRightCap"},
+     events={"Construct","UpdateTarget"}},
+    {path="/Game/_Dawnwalker/UI/_Unified/Combat/WBP_Combat_BossBar.WBP_Combat_BossBar_C",
+     fields={"HealthBar","HealthBarLeftCap","HealthBarRightCap","IndicatorBox"},
+     events={"Update Owner"}},
+}
+local healthQueue, healthPending, healthFirst, healthLast = {}, {}, 1, 0
+local function healthReady()
+    return healthFirst<=healthLast and candidate==nil and valid(hud)
+end
+local function queueHealth(object, spec)
+    if object==nil then return end
+    if healthPending[object] then healthPending[object].again=true;return end
+    if healthLast-healthFirst+1>=64 then
+        if D.debugLogging then D.count("enemyHealthQueueFull") end
+        return
+    end
+    local job={object=object,spec=spec,field=1,attempts=0}
+    healthLast=healthLast+1;healthQueue[healthLast]=job;healthPending[object]=job
+    wake("enemyHealth")
+end
+local function healthStep()
+    local job=healthQueue[healthFirst]
+    healthQueue[healthFirst]=nil;healthFirst=healthFirst+1
+    if healthFirst>healthLast then healthFirst,healthLast=1,0 end
+    local object,spec=job.object,job.spec
+    local function retry()
+        job.attempts=job.attempts+1
+        if job.attempts>=120 then
+            if D.debugLogging then D.event("enemyHealth","readiness exhausted: %s field=%s",spec.path,spec.fields[job.field]) end
+            return false
+        end
+        return true
+    end
+    local keep=false
+    local success,reason=pcall(function()
+        if not valid(object) then return end
+        local eventIndex=spec.eventIndex or 1
+        if eventIndex<=#spec.events then
+            local path=spec.path..":"..spec.events[eventIndex]
+            if hooks[path] then spec.eventIndex=eventIndex+1;keep=true;return end
+            local ok,pre,post=pcall(RegisterHook,path,function(context)
+                queueHealth(unwrap(context),spec)
+            end)
+            spec.hookAttempts=(spec.hookAttempts or 0)+1
+            if ok and type(pre)=="number" and type(post)=="number" then
+                hooks[path]={pre,post};spec.eventIndex=eventIndex+1;spec.hookAttempts=0
+            elseif spec.hookAttempts>=12 then
+                spec.failedEvent=spec.failedEvent or eventIndex
+                spec.eventIndex=eventIndex+1;spec.hookAttempts=0
+                if D.debugLogging then D.event("enemyHealth","lifecycle hook unavailable: %s",path) end
+            end
+            keep=true
+            return
+        end
+        local ow,pc=object:GetWorld(),object:GetOwningPlayer()
+        if not valid(ow) or not valid(pc) then keep=retry();return end
+        if not sameObject(ow,world) or not sameObject(pc,controller)
+            or not sameObject(controller:GetWorld(),world) then return end
+        local child=object[spec.fields[job.field]]
+        if not valid(child) then keep=retry();return end
+        if child:GetRenderOpacity()~=0 then
+            child:SetRenderOpacity(0)
+            if D.debugLogging then D.count("enemyHealthWrites");D.event("enemyHealth","hidden=%s",spec.fields[job.field]) end
+        end
+        job.field=job.field+1;job.attempts=0
+        keep=job.field<=#spec.fields
+        if not keep and job.again then job.field=1;job.again=false;keep=true end
+    end)
+    if not success then
+        keep=retry()
+        if D.debugLogging then D.event("enemyHealth","update failed: %s",tostring(reason)) end
+    end
+    if keep then healthLast=healthLast+1;healthQueue[healthLast]=job
+    else healthPending[object]=nil end
+end
+healthStep=D.wrap("enemyHealth",healthStep)
+local healthTurn=false
 local function signal() if D.debugLogging then D.count("presetEvents") end;wake() end
 local function capture(context)
     statsRefresh=true
@@ -427,6 +511,13 @@ local function step()
         settingsStep()
         return false
     end
+    -- Alternate with existing work: one health child operation per frame,
+    -- sharing the same one-shot worker and its native frame gate.
+    healthTurn=not healthTurn
+    if healthReady() and (healthTurn or (cursor==0 and not dirty and not statsPending and not markersReady())) then
+        healthStep()
+        return false
+    end
     -- Coalesce resource events; no timer requests resource reads.
     if statsPending and candidate==nil and cursor==0 and not dirty then
         statsPending=false
@@ -445,7 +536,7 @@ local function step()
         return false
     end
     if cursor==0 and not dirty then
-        if markersReady() then return false end
+        if markersReady() or healthReady() then return false end
         worker=false
         armExpiry()
         return true
@@ -527,7 +618,7 @@ local function step()
         return false
     end
     cursor=0
-    if dirty or statsPending or markersReady() then return false end
+    if dirty or statsPending or markersReady() or healthReady() then return false end
     attempts=0
     worker=false
     armExpiry()
@@ -553,7 +644,7 @@ wake = function(statsOnly)
         absent={}
         settingsPending,settingsAttempts=true,0
     end
-    if statsOnly~="marker" and statsOnly~="settings" and statsOnly~="resource" then dirty=true end
+    if statsOnly~="marker" and statsOnly~="settings" and statsOnly~="resource" and statsOnly~="enemyHealth" then dirty=true end
     if worker then if D.debugLogging then D.count("workerCoalesced") end; return end
     worker=true
     if D.debugLogging then D.count("workerStarts") end
@@ -597,6 +688,15 @@ local markerSubscribed=pcall(NotifyOnNewObject, MARKER, function(object)
 end)
 if not markerSubscribed then
     print("[Quiet Dawn HUD] Marker lifecycle notification unavailable; marker left to the game.")
+end
+for _,spec in ipairs(healthTypes) do
+    local subscribedHealth=pcall(NotifyOnNewObject,spec.path,function(object)
+        if spec.failedEvent then
+            spec.eventIndex=spec.failedEvent;spec.failedEvent=nil;spec.hookAttempts=0
+        end
+        queueHealth(object,spec)
+    end)
+    if not subscribedHealth then print("[Quiet Dawn HUD] Enemy health notification unavailable: "..spec.path) end
 end
 -- At most one outstanding hide deadline. It reads cached percentages and the
 -- game clock only. A pause/extended hold reschedules its remaining delay; once
