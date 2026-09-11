@@ -2,6 +2,21 @@
 local directory = assert(debug.getinfo(1,'S').source:sub(2):match('^(.*[/\\])'))
 local Store = dofile(directory .. 'SettingsStore.lua')
 local schema = dofile(directory .. 'SettingsSchema.lua')
+-- Older menu files predate these two options. Supply only their missing
+-- defaults in memory; Apply saves the menu's full settings normally. Keep
+-- strict validation for malformed, duplicate and all other missing settings.
+local parse = Store.parse
+Store.parse = function(text, contract)
+    local values, err = parse(text, contract)
+    for _ = 1, 2 do
+        if values then break end
+        local key = err and err:match('^Missing setting: (.+)$')
+        if key ~= 'hideEnemyNames' and key ~= 'hideEnemyDifficultyIcons' then break end
+        text = text .. '\n[Settings]\n' .. key .. ' = 1\n'
+        values, err = parse(text, contract)
+    end
+    return values, err
+end
 local panels = {"HumanStats","VampireStats","WBP_Compass","WBP_HUD_QuestInfo","WBP_HUD_Quickslots","Crosshair","WBP_AA_Quickslots","WBP_OpenFocusPrompt","WBP_HUD_Quickslots_ChangePrompt","WBP_ControlsLegend","WBP_BuffContainer","WBP_HUD_AbilityCooldownsContainer","CombatFocusPanel","WBP_HUD_FocusCharge_Bar","WBP_HUD_SpecialAttackCooldown","XPBar"}
 local values, err = Store.load(directory, schema, function()
     local legacyPath = directory .. 'QuietDawnConfig.lua'
@@ -55,5 +70,7 @@ local values, err = Store.load(directory, schema, function()
 end)
 if not values then print('[Quiet Dawn HUD] Settings rejected: '..tostring(err));return {enabled=false,panels={},debugLogging=false} end
 values.enabled=values.enabled==1;values.manualPeek=values.manualPeek==1;values.debugLogging=values.debugLogging==1
+values.hideEnemyNames=values.hideEnemyNames==1
+values.hideEnemyDifficultyIcons=values.hideEnemyDifficultyIcons==1
 values.panels={};for _, p in ipairs(panels) do if values['panel_'..p]==1 then values.panels[#values.panels+1]=p end end
 return values

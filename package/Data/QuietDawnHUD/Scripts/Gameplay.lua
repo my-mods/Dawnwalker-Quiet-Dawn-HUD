@@ -48,7 +48,7 @@ for _, key in ipairs({"healthHoldSeconds", "staminaHoldSeconds", "manualPeekSeco
         return
     end
 end
-if not config.enabled or #names == 0 then return end
+if not config.enabled then return end
 local statNames = {}
 for _, name in ipairs(names) do
     if name == "HumanStats" or name == "VampireStats" then statNames[#statNames+1]=name end
@@ -322,9 +322,10 @@ local function markerStep()
 end
 markerStep=D.wrap("marker",markerStep)
 markerHooksStep=D.wrap("hook",markerHooksStep)
--- Enemy health lives outside WBP_GameHUD. Hide only its health widgets,
--- keeping stamina, wound information and combat warnings under game control.
--- Build 25191761: these named children and lifecycle functions are exported
+-- Enemy bars live outside WBP_GameHUD. Health is always hidden; name and
+-- difficulty children follow independent settings. Stamina, wounds and
+-- combat warnings stay under game control.
+-- Build 25232147: these named children and lifecycle functions are exported
 -- by WBP_CombatCharacterBar and WBP_Combat_BossBar.
 local healthTypes = {
     {path="/Game/_Dawnwalker/UI/_Unified/Combat/WBP_CombatCharacterBar.WBP_CombatCharacterBar_C",
@@ -334,6 +335,18 @@ local healthTypes = {
      fields={"HealthBar","HealthBarLeftCap","HealthBarRightCap","IndicatorBox"},
      events={"Update Owner"}},
 }
+-- The ordinary bar has no name label; boss names use BossNameLabel.
+-- Hide the difficulty widget's parent so its internal icon animation cannot
+-- reveal it. Never suppress the shared combat warning/lock-on widget here.
+if config.hideEnemyNames then
+    local boss = healthTypes[2]
+    boss.fields[#boss.fields+1] = "BossNameLabel"
+end
+if config.hideEnemyDifficultyIcons then
+    for _, spec in ipairs(healthTypes) do
+        spec.fields[#spec.fields+1] = "LevelIndicator"
+    end
+end
 local healthQueue, healthPending, healthFirst, healthLast = {}, {}, 1, 0
 local function healthReady()
     return healthFirst<=healthLast and candidate==nil and valid(hud)

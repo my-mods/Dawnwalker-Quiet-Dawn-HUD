@@ -1,6 +1,8 @@
 -- Settings contract shared by the loader and Mod Setting Menu. MIT License.
 return {
     {key="enabled", default=1, values={0,1}},
+    {key="hideEnemyNames", default=1, values={0,1}},
+    {key="hideEnemyDifficultyIcons", default=1, values={0,1}},
     {key="healthThreshold", default=0.5, min=0, max=1, integer=false},
     {key="staminaThreshold", default=0.2, min=0, max=1, integer=false},
     {key="healthHoldSeconds", default=4, min=0, max=60, integer=false},

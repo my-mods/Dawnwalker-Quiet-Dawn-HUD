@@ -1,5 +1,7 @@
 # Quiet Dawn HUD - Auto-hide HUD
 
+Enemy names and difficulty icons are now hidden by default. Separate Mod Settings toggles let you restore either independently.
+
 Health and stamina now respond to resource-change events and the stat widgets' update functions without recurring stat checks. Alerts remain readable when stat panels were transparent during initialization. A cached-state deadline preserves the hide delay and rapid loss/recovery events.
 
 Hold the Controls Legend button (Menu/Options on standard controller layouts) for a 3-second full player HUD peek. Repeating the gesture refreshes the timer. The peek restores automatic hiding afterward while retaining low-health alerts and the configured enemy HUD behavior.

@@ -2,6 +2,8 @@
 -- Read once at startup. Restart the game after editing.
 return {
     enabled = true,
+    hideEnemyNames = true,
+    hideEnemyDifficultyIcons = true,
     -- Both stat panels show together when either resource needs attention.
     healthThreshold = 0.50, -- strictly below 50 percent; vampire form uses blood
     staminaThreshold = 0.20,
