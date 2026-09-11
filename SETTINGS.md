@@ -11,13 +11,13 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 | General | Enabled | Off, On |
 | Enemies | Hide enemy names | Off, On |
 | Enemies | Hide enemy difficulty icons | Off, On |
-| Vitals | Keep health visible below | 0% to 100% (default 50%) |
-| Vitals | Keep stamina visible below | 0% to 100% (default 20%) |
-| Vitals | Health / blood hold duration | 0 to 60 seconds |
-| Vitals | Stamina hold duration | 0 to 60 seconds |
-| Vitals | Show HUD duration | 0 to 60 seconds |
+| Vitals | Keep health visible below | 0% to 100% in 5-point steps (default 50%) |
+| Vitals | Keep stamina visible below | 0% to 100% in 5-point steps (default 20%) |
+| Vitals | Health / blood hold duration | 0 to 60 seconds in 0.5-second steps |
+| Vitals | Stamina hold duration | 0 to 60 seconds in 0.5-second steps |
+| Vitals | Show HUD duration | 0 to 60 seconds in 0.5-second steps |
 | Vitals | Show HUD on hold | Off, On |
-| HUD visibility | Compass opacity | 0% to 100% |
+| HUD visibility | Compass opacity | 0% to 100% in 5-point steps |
 | HUD visibility | Human health and stamina | Off, On |
 | HUD visibility | Vampire blood and stamina | Off, On |
 | HUD visibility | Quest tracker | Off, On |
