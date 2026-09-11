@@ -64,5 +64,6 @@ if not values then print('[Quiet Dawn - Customizable HUD] Settings rejected: '..
 values.enabled=values.enabled==1;values.manualPeek=values.manualPeek==1;values.debugLogging=values.debugLogging==1
 values.hideEnemyNames=values.hideEnemyNames==1
 values.hideEnemyDifficultyIcons=values.hideEnemyDifficultyIcons==1
-values.panels={};for _, p in ipairs(panels) do if values['panel_'..p]==1 then values.panels[#values.panels+1]=p end end
+-- Compass opacity is authoritative; the legacy compass panel key is retained only for file compatibility.
+values.panels={};for _, p in ipairs(panels) do if p=='WBP_Compass' or values['panel_'..p]==1 then values.panels[#values.panels+1]=p end end
 return values

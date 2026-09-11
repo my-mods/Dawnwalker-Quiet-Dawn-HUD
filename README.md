@@ -8,7 +8,7 @@ For **The Blood of Dawnwalker**. Combat, drawing a weapon, lock-on, and focus no
 - **Enemy lock-on marker:** hidden in its neutral state when directional indicators are disabled. Enabling directional indicators restores the shared widget, including its neutral directional display. Attack-direction and parry-direction cues stay hidden while directional indicators are disabled. Unblockable-attack and weak-spot cues retain the shared widget; game visibility rules remain in effect. Unknown states are left visible rather than suppressing a possible warning.
 - **Player health and stamina:** shown together at full opacity after damage or stamina use, while health is strictly below **50%**, or while stamina is strictly below **20%**. Vampire health follows the blood bar; human health follows HP.
 - **Hide delay:** **4 seconds** after the last health/blood drop; **1.5 seconds** after the last stamina drop. Further drops restart the relevant delay. Low health or stamina keeps the panel visible without a timeout. Exactly 50% health or 20% stamina does not qualify by itself.
-- **Manual HUD peek:** hold the Controls Legend button (Menu/Options on the standard controller layouts) to show the player HUD for **3 seconds**. Repeat the gesture to refresh the peek. When it ends, automatic health/stamina visibility resumes.
+- **Manual HUD peek:** hold the Controls Legend button (Menu on Xbox, Options on PlayStation, or L on keyboard by default) to show the player HUD for **3 seconds**. Repeat the gesture to refresh the peek. When it ends, automatic health/stamina visibility resumes.
 - **Parry/attack indicators:** normal game behavior, including difficulty restrictions. This mod never enables disabled indicators.
 
 The compass, quest tracker, quickslots and their change prompt, crosshair, control legend, buffs, ability cooldowns, focus panel/charge, special-attack cooldown, and XP bar stay hidden. Interaction prompts, dialogue, subtitles, notifications, and menus retain their game behavior. The manual peek reveals the managed player panels at full opacity, including the compass, quests, quickslots, buffs and cooldowns. Enemy health bars and disabled directional indicators keep their configured behavior; menus, dialogue and the game's visibility restrictions remain in control.
@@ -32,7 +32,7 @@ To remove, close the game, disable/remove the mod in Vortex, and deploy. No save
 
 ## Compass
 
-Change Compass opacity in Mod Settings: 0 hides it; 0.5 shows it at half opacity. Keep its panel toggle enabled. The old Show Compass variant is no longer needed; its preferences can be imported from your backed-up legacy Lua file on first use.
+Change Compass opacity in Mod Settings: 0 hides it; 0.5 shows it at half opacity. No separate compass toggle is needed; opacity alone controls visibility. The old Show Compass variant is no longer needed; its preferences can be imported from your backed-up legacy Lua file on first use.
 
 ## Settings
 

@@ -8,7 +8,7 @@ For **The Blood of Dawnwalker**. Combat, drawing a weapon, lock-on, and focus no
 - **Enemy lock-on marker:** hidden in its neutral state when directional indicators are disabled. Enabling directional indicators restores the shared widget, including its neutral directional display. Attack-direction and parry-direction cues stay hidden while directional indicators are disabled. Unblockable-attack and weak-spot cues retain the shared widget; game visibility rules remain in effect. Unknown states are left visible rather than suppressing a possible warning.
 - **Player health and stamina:** shown together at full opacity after damage or stamina use, while health is strictly below **50%**, or while stamina is strictly below **20%**. Vampire health follows the blood bar; human health follows HP.
 - **Hide delay:** **4 seconds** after the last health/blood drop; **1.5 seconds** after the last stamina drop. Further drops restart the relevant delay. Low health or stamina keeps the panel visible without a timeout. Exactly 50% health or 20% stamina does not qualify by itself.
-- **Manual HUD peek:** hold the Controls Legend button (Menu/Options on the standard controller layouts) to show the player HUD for **3 seconds**. Repeat the gesture to refresh the peek. When it ends, automatic health/stamina visibility resumes.
+- **Manual HUD peek:** hold the Controls Legend button (Menu on Xbox, Options on PlayStation, or L on keyboard by default) to show the player HUD for **3 seconds**. Repeat the gesture to refresh the peek. When it ends, automatic health/stamina visibility resumes.
 - **Parry/attack indicators:** normal game behavior, including difficulty restrictions. This mod never enables disabled indicators.
 
 The compass, quest tracker, quickslots and their change prompt, crosshair, control legend, buffs, ability cooldowns, focus panel/charge, special-attack cooldown, and XP bar stay hidden. Interaction prompts, dialogue, subtitles, notifications, and menus retain their game behavior. The manual peek reveals the managed player panels at full opacity, including the compass, quests, quickslots, buffs and cooldowns. Enemy health bars and disabled directional indicators keep their configured behavior; menus, dialogue and the game's visibility restrictions remain in control.
@@ -32,7 +32,7 @@ To remove, close the game, disable/remove the mod in Vortex, and deploy. No save
 
 ## Compass
 
-Change Compass opacity in Mod Settings: 0 hides it; 0.5 shows it at half opacity. Keep its panel toggle enabled. The old Show Compass variant is no longer needed; its preferences can be imported from your backed-up legacy Lua file on first use.
+Change Compass opacity in Mod Settings: 0 hides it; 0.5 shows it at half opacity. No separate compass toggle is needed; opacity alone controls visibility. The old Show Compass variant is no longer needed; its preferences can be imported from your backed-up legacy Lua file on first use.
 
 ## Settings
 
@@ -63,44 +63,50 @@ Install [Mod Setting Menu 1.0.5 or later](https://www.nexusmods.com/thebloodofda
 
 The stable menu ID is `oOCamilleOo_QuietDawnHUD`. The mod generates `settings.ini` beside `mod_settings.ini` in its UE4SS mod folder. This generated file is the authoritative settings store and is not shipped in the ZIP. Existing supported preferences are imported on first use. After the new settings are saved and verified, the successfully imported legacy files are deleted if their contents are unchanged. Migration or save failures retain the originals. Cleanup failures are logged and do not prevent using the new settings. Files left by an earlier migration are not deleted automatically. Back up `settings.ini` before removing/reinstalling the mod or moving its folder. Restore that backup into the same runtime folder before launching. Do not restore an old INI over it.
 
-Missing, duplicate or invalid settings stop configuration loading and are reported in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. Preserve the file before correcting it. If a menu save fails, preserve its temporary/backup files and follow the menu’s recovery instructions. Startup prepares the menu file once, including any supported upgrade. Gameplay reads a fresh settings snapshot when a save loads. Waiting at the main menu performs no recurring settings work; travel and possession events use the current snapshot. Settings are never polled. `debugLogging` controls additional diagnostic logging; it defaults to Off.
+Missing existing settings, duplicate or invalid settings stop configuration loading and are reported in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. Preserve the file before correcting it. If a menu save fails, preserve its temporary/backup files and follow the menu’s recovery instructions. Startup prepares the menu file once, including any supported upgrade. Gameplay reads a fresh settings snapshot when a save loads. Waiting at the main menu performs no recurring settings work; travel and possession events use the current snapshot. Settings are never polled. `debugLogging` controls additional diagnostic logging; it defaults to Off.
 
 | Group | Setting | Choices or range |
 | --- | --- | --- |
 | General | Enabled | Off, On |
+| Enemies | Hide enemy names | Off, On |
+| Enemies | Hide enemy difficulty icons | Off, On |
 | Vitals | Health or blood threshold | 0 to 1 |
 | Vitals | Stamina threshold | 0 to 1 |
-| Vitals | Health or blood hold | 0 to 60 |
-| Vitals | Stamina hold | 0 to 60 |
-| Vitals | Manual peek duration | 0 to 60 |
-| Vitals | Manual peek | Off, On |
-| Panels | Compass opacity | 0 to 1 |
-| Diagnostics | Debug logging | Off, On |
-| Diagnostics | Diagnostic summary interval | 5 to 120 |
-| Diagnostics | Slow callback threshold | 0.1 to 1000 |
-| Diagnostics | Diagnostic events per second | 1 to 20 |
-| Panels | HumanStats | Off, On |
-| Panels | VampireStats | Off, On |
-| Panels | Compass | Off, On |
-| Panels | QuestInfo | Off, On |
-| Panels | Quickslots | Off, On |
-| Panels | Crosshair | Off, On |
-| Panels | AA Quickslots | Off, On |
-| Panels | OpenFocusPrompt | Off, On |
-| Panels | Quickslots ChangePrompt | Off, On |
-| Panels | ControlsLegend | Off, On |
-| Panels | BuffContainer | Off, On |
-| Panels | AbilityCooldownsContainer | Off, On |
-| Panels | CombatFocusPanel | Off, On |
-| Panels | FocusCharge Bar | Off, On |
-| Panels | SpecialAttackCooldown | Off, On |
-| Panels | XPBar | Off, On |
+| Vitals | Health / blood hold duration | 0 to 60 seconds |
+| Vitals | Stamina hold duration | 0 to 60 seconds |
+| Vitals | Show HUD duration | 0 to 60 seconds |
+| Vitals | Show HUD on hold | Off, On |
+| HUD visibility | Compass opacity | 0 to 1 |
+| HUD visibility | Human health and stamina | Off, On |
+| HUD visibility | Vampire blood and stamina | Off, On |
+| HUD visibility | Quest tracker | Off, On |
+| HUD visibility | Quickslots | Off, On |
+| HUD visibility | Crosshair | Off, On |
+| HUD visibility | Quickslot shortcuts | Off, On |
+| HUD visibility | Focus activation prompt | Off, On |
+| HUD visibility | Switch quickslots prompt | Off, On |
+| HUD visibility | Controls legend | Off, On |
+| HUD visibility | Active buffs | Off, On |
+| HUD visibility | Ability cooldowns | Off, On |
+| HUD visibility | Combat focus | Off, On |
+| HUD visibility | Focus charge | Off, On |
+| HUD visibility | Special attack cooldown | Off, On |
+| HUD visibility | Experience bar | Off, On |
+| Diagnostics | Logging | Off, On |
+
+Turn off **Hide enemy names** to restore enemy name labels (boss names), or **Hide enemy difficulty icons** to restore difficulty indicators for ordinary enemies and bosses. The choices are independent. Apply, then load a save. The player HUD peek keeps both choices in effect. At startup, older settings files receive only the missing new options, set to On, so the menu can edit them. Existing preferences and comments are preserved; the original file is retained as `settings.ini.before-enemy-labels`. Keep recovery files if an upgrade error is reported.
 
 Console commands are not used to change settings.
 
 Conditional rows and groups show relevant controls as you edit. Hidden options keep their saved values; hiding an option does not reset it. The interface uses toggles, labeled choices and sliders; the numeric representation in settings.ini is an implementation detail.
 
 When upgrading an older Quiet Dawn package, back up `Scripts/QuietDawnConfig.lua` before Vortex replaces/removes that package. Restore the backed-up file beside the new scripts before first launch to import its panel/compass choices. If it is absent, the mod uses QuietDawnDefaults.lua. Successfully imported legacy Lua and diagnostics files are removed after the new settings are saved and verified.
+
+**HUD visibility:** On keeps the element visible under the game's normal rules. Off hides it between alerts or HUD peeks. These switches preserve existing visibility preferences. Compass opacity is the only compass control: 0 hides it, and a positive value shows it at that opacity. The old compass panel switch is no longer used.
+
+**Show HUD:** hold Menu on Xbox, Options on PlayStation, or L on keyboard by default. The action follows any remapping of Controls Legend. Show HUD duration controls the time the HUD remains visible after activation.
+
+**Logging** is the final menu setting and the only diagnostic control. Leave it Off for normal play; On writes troubleshooting details to `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`.
 
 
 Bundled library

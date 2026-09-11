@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Simplify diagnostics to a single Logging switch at the end of Mod Settings.
+- Clarify HUD hold durations and default controls. HUD visibility switches now show On for visible and Off for hidden; compass opacity alone controls compass visibility.
+
 - Fix the Mod Settings "config key missing or ambiguous" error when opening Quiet Dawn before loading a save after an upgrade.
 
 - Hide enemy names and difficulty icons by default. Add independent Mod Settings toggles to restore either, and preserve older settings files when adding the new defaults.
