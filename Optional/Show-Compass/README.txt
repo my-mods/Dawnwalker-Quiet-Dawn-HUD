@@ -26,7 +26,7 @@ The compass, quest tracker, quickslots and their change prompt, crosshair, contr
 ## Install, update, and remove
 
 1. Close the game. Disable HUD Tweaks and its Fixes submod in Vortex and deploy.
-2. Import `Quiet-Dawn-HUD.zip` or the optional `Quiet-Dawn-HUD-Show-Compass.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.
+2. Import `Quiet-Dawn-Customizable-HUD.zip` or the optional `Quiet-Dawn-Customizable-HUD-Show-Compass.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.
 3. Runtime files belong under `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/`. Restart the game; live Lua reload is not supported.
 
 Install **one version only**. Both archives use the same internal ID and runtime paths. Back up configuration before replacing your existing Vortex entry: the shipped configuration is a full replacement, not an automatic merge. To switch variants, disable/remove the old entry and deploy before importing and enabling the other archive. If the installer selected an incorrect layout, reinstall through the installer; redeployment alone preserves it.
@@ -35,7 +35,7 @@ To remove, close the game, disable/remove the mod in Vortex, and deploy. No save
 
 ## Optional Show Compass version
 
-`Quiet-Dawn-HUD-Show-Compass.zip` is a complete alternative. It displays the compass at 50% opacity; the game may still hide it in dialogue or other special states. Health/stamina timing and all other settings are identical to the standard version.
+`Quiet-Dawn-Customizable-HUD-Show-Compass.zip` is a complete alternative. It displays the compass at 50% opacity; the game may still hide it in dialogue or other special states. Health/stamina timing and all other settings are identical to the standard version.
 
 ## Configuration
 

@@ -23,7 +23,7 @@ The compass, quest tracker, quickslots and their change prompt, crosshair, contr
 ## Install, update, and remove
 
 1. Close the game. Disable HUD Tweaks and its Fixes submod in Vortex and deploy.
-2. Import `Quiet-Dawn-HUD.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.
+2. Import `Quiet-Dawn-Customizable-HUD.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.
 3. Runtime files belong under `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/`. Restart the game; live Lua reload is not supported.
 
 Install **one version only**. When updating an older version, back up `Scripts/QuietDawnConfig.lua` and your personal diagnostics INI before Vortex removes or replaces the old package. To import those choices, restore the legacy Lua file beside the new scripts before first launch. The new ZIP supplies `QuietDawnDefaults.lua` and does not overwrite that legacy filename. After migration, back up the generated `settings.ini` for future reinstalls. Reinstall through Vortex’s installer when the package layout changes.
