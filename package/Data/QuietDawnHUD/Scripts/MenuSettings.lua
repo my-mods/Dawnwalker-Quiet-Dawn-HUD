@@ -4,7 +4,9 @@ local Store = dofile(directory .. 'SettingsStore.lua')
 local schema = dofile(directory .. 'SettingsSchema.lua')
 local panels = {"HumanStats","VampireStats","WBP_Compass","WBP_HUD_QuestInfo","WBP_HUD_Quickslots","Crosshair","WBP_AA_Quickslots","WBP_OpenFocusPrompt","WBP_HUD_Quickslots_ChangePrompt","WBP_ControlsLegend","WBP_BuffContainer","WBP_HUD_AbilityCooldownsContainer","CombatFocusPanel","WBP_HUD_FocusCharge_Bar","WBP_HUD_SpecialAttackCooldown","XPBar"}
 local values, err = Store.load(directory, schema, function()
-    local legacy, le, lc = Store.read(directory .. 'QuietDawnConfig.lua')
+    local legacyPath = directory .. 'QuietDawnConfig.lua'
+    local legacy, le, lc = Store.read(legacyPath)
+    local sources = legacy and {{path=legacyPath, text=legacy}} or {}
     if not legacy and lc ~= 2 then return nil, le end
     local ok, cfg
     if legacy then
@@ -27,7 +29,9 @@ local values, err = Store.load(directory, schema, function()
     end
     local base=os.getenv('LOCALAPPDATA')
     if not base then return nil, 'LOCALAPPDATA unavailable for legacy migration' end
-    local text, e, code=Store.read(base..'/Dawnwalker/Saved/Config/QuietDawnHUD.ini')
+    local diagnosticsPath=base..'/Dawnwalker/Saved/Config/QuietDawnHUD.ini'
+    local text, e, code=Store.read(diagnosticsPath)
+    if text then sources[#sources+1]={path=diagnosticsPath, text=text} end
     if not text and code~=2 then return nil,e end
     local section, canonical, legacy='',nil,nil
     for line in (text or ''):gmatch('[^\r\n]+') do
@@ -47,7 +51,7 @@ local values, err = Store.load(directory, schema, function()
         end
     end
     result.debugLogging=canonical or legacy or 0
-    return result
+    return result, nil, sources
 end)
 if not values then print('[Quiet Dawn HUD] Settings rejected: '..tostring(err));return {enabled=false,panels={},debugLogging=false} end
 values.enabled=values.enabled==1;values.manualPeek=values.manualPeek==1;values.debugLogging=values.debugLogging==1

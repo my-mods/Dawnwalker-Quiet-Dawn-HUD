@@ -65,14 +65,34 @@ end
 function M.path(directory)
     return directory:gsub('[^/\\]+[/\\]$', '') .. 'settings.ini'
 end
+-- Only sources captured by this successful first-run migration are eligible.
+local function cleanupLegacy(sources, settingsPath)
+    for _, source in ipairs(sources or {}) do
+        local current, err, code = read(source.path)
+        if current ~= nil then
+            if source.path == settingsPath or current ~= source.text then
+                print('[Mod Settings] Legacy settings retained because the file changed: ' .. source.path)
+            elseif source.preservePath and read(source.preservePath) ~= source.text then
+                print('[Mod Settings] Legacy settings retained because the advanced snapshot differs: ' .. source.path)
+            else
+                local ok, e = os.remove(source.path)
+                if not ok then print('[Mod Settings] Migrated settings are saved; could not remove legacy file ' .. source.path .. ': ' .. tostring(e)) end
+            end
+        elseif code ~= 2 then
+            print('[Mod Settings] Migrated settings are saved; could not verify legacy file ' .. source.path .. ': ' .. tostring(err))
+        end
+    end
+end
 function M.load(directory, schema, seed)
     local path = M.path(directory)
+    local migrated, created
     local text, err, code = read(path)
     if not text then
         if code ~= 2 then return nil, err, path end
         local backup, be, bc = read(path .. '.backup')
         if backup or bc ~= 2 then return nil, 'Recover settings.ini.backup before starting: ' .. tostring(be or ''), path end
-        local values, e = seed()
+        local values, e, sources = seed()
+        migrated = sources
         if not values then return nil, e, path end
         local lines = {'; Managed through Main Menu > Mod Settings. Apply, then restart.',
             '; Generated preferences: back up before uninstalling. Legacy files are not synchronized.', '[Settings]'}
@@ -87,10 +107,15 @@ function M.load(directory, schema, seed)
         if not ok then
             local existing = read(path)
             if not existing then return nil, ce, path end
-            text = existing -- Concurrent creator won; never overwrite it.
+            text = existing -- Concurrent creator won; never overwrite it or delete its legacy inputs.
+        else
+            created = true
+            local saved, se = read(path)
+            if saved ~= text then return nil, se or 'Cannot verify saved migration; legacy files retained', path end
         end
     end
     local values, e = M.parse(text, schema)
+    if values and created then cleanupLegacy(migrated, path) end
     return values, e, path
 end
 return M
