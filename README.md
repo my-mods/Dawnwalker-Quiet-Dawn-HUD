@@ -15,32 +15,28 @@ The compass, quest tracker, quickslots and their change prompt, crosshair, contr
 
 ## Requirements and compatibility
 
-- Dawnwalker-compatible UE4SS with Blueprint script hooks enabled, exposing `ExecuteInGameThreadWithDelay`, `CancelDelayedAction`, `KismetSystemLibrary.GetFrameCount`, and `GetGameTimeInSeconds`. Development reference: commit `97b7e501c`.
+- UE4SS for BoD **Framecore 2b** with the bundled native HUD bridge, or a Dawnwalker-compatible UE4SS build with Blueprint script hooks enabled, exposing `ExecuteInGameThreadWithDelay`, `CancelDelayedAction`, `KismetSystemLibrary.GetFrameCount`, and `GetGameTimeInSeconds`. Development reference: commit `97b7e501c`.
 - Stock HUD/API reference: Steam build **25191761**, executable CL-258042.
 - Disable **HUD Tweaks and HUD Tweaks - Fixes** before enabling this mod. They are not dependencies and can compete over opacity despite having different filenames.
 - Mods altering the managed HUD panels require compatibility testing.
 
 ## Install, update, and remove
 
-### UE4SS setup (Framecore or Vercadi)
+### UE4SS setup
 
-Quiet Dawn requires Blueprint script hooks. After deploying the mod, close the game and double-click `Enable-Blueprint-Hooks.bat` in `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/`.
+**Framecore 2b:** use its Performance profile with the bundled `dlls/main.dll`. The helper supplies Quiet Dawn's HUD events while `HookProcessInternal` and `HookProcessLocalScriptFunction` remain 0 in the INI. It does not rewrite the loader configuration. Keep the helper and Lua scripts from the same package together.
 
-The script sets or adds `HookProcessLocalScriptFunction = 1` under `[Hooks]` in the runtime's `UE4SS-settings.ini`. It works with either distribution's existing INI, preserving its other settings, comments and encoding. Before an edit it saves the original as `UE4SS-settings.ini.QuietDawn-<unique ID>.bak`. Running it again when the setting is already 1 makes no changes. It does not change `HookProcessInternal` or choose a different profile.
+If you previously installed the **Quiet Dawn - Framecore Settings** overlay, back up your loader preferences, disable that overlay in Vortex, and deploy Framecore's preferred profile. Do not run `Enable-Blueprint-Hooks.bat` when using the native bridge with the Performance profile.
 
-If the INI is missing and the installed `profiles/profile_perf.ini` exists, the script creates the INI from that Framecore Performance template with the hook enabled. If neither file exists, it stops and asks you to restore your loader configuration. It does not guess the loader from its DLL or replace an existing INI with defaults. Duplicate sections/keys or a malformed setting are reported without editing the file.
+**Other UE4SS builds, including Vercadi:** use the regular Blueprint dispatcher. With the game closed, the optional `Enable-Blueprint-Hooks.bat` in `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/` enables `HookProcessLocalScriptFunction` in the existing INI and saves a uniquely named backup. It preserves other settings, comments and encoding; if the INI is absent, it can use the installed Framecore Performance template. Duplicate or malformed settings stop the script without edits. It never changes `HookProcessInternal`. Restart the game afterward.
 
-Restart the game afterward. Rerun the script after a Framecore profile switch or a Vortex deployment/update that replaces the configuration. If Vortex reports an external file change, retain the edited INI when you want this setting preserved. This is a one-time user-run setup tool; the Lua mod does not edit or poll your loader settings.
-
-If you used the older **Quiet Dawn - Framecore Settings** full-INI overlay, disable that overlay and deploy your preferred loader configuration before running this script. Back up any preferences first. The new script is bundled with the main Quiet Dawn ZIP and needs no settings overlay.
-
-Enabling the dispatcher meets Quiet Dawn's hook requirement; stability and performance also depend on the game/runtime build. If enabling it causes a crash, retain the launch log and restore the backed-up configuration through your normal Vortex workflow.
+The native route targets Framecore 2b's specific DLL. Another DLL hash or an already-enabled script dispatcher retains Quiet Dawn's regular Lua hook route. Native build details and the supported hash are in [native build notes](https://github.com/my-mods/Dawnwalker-Quiet-Dawn-Customizable-HUD/blob/main/native/BUILD.md).
 
 1. Close the game. Disable HUD Tweaks and its Fixes submod in Vortex and deploy.
 2. Import `Quiet-Dawn-Customizable-HUD.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.
-3. Runtime files belong under `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/`. Restart the game; live Lua reload is not supported.
+3. Runtime files belong under `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/`. Restart the game; live Lua or DLL reload is not supported.
 
-Install **one version only**. When updating an older version, back up `Scripts/QuietDawnConfig.lua` and your personal diagnostics INI before Vortex removes or replaces the old package. To import those choices, restore the legacy Lua file beside the new scripts before first launch. The new ZIP supplies `QuietDawnDefaults.lua` and does not overwrite that legacy filename. After migration, back up the generated `settings.ini` for future reinstalls. Reinstall through Vortex’s installer when the package layout changes.
+Install **one version only**. When updating an older version, back up `Scripts/QuietDawnConfig.lua` and your personal diagnostics INI before Vortex removes or replaces the old package. To import those choices, restore the legacy Lua file beside the new scripts before first launch. The new ZIP supplies `QuietDawnDefaults.lua` and does not overwrite that legacy filename. After migration, back up the generated `settings.ini` for future reinstalls. Reinstall through Vortexâ€™s installer when the package layout changes.
 
 To remove, close the game, disable/remove the mod in Vortex, and deploy. No save-game data is changed.
 
@@ -53,6 +49,8 @@ Change Compass opacity in Mod Settings in 5-point steps: 0% hides it; 50% shows 
 Use [Mod Setting Menu 1.0.5 or later](https://www.nexusmods.com/thebloodofdawnwalker/mods/271) from the main menu. Opacity and resource thresholds adjust in 5 percentage-point steps; HUD durations adjust in 0.5-second steps. Press Apply, then load a save. See [SETTINGS.md](SETTINGS.md) for all controls, first-use import and preference backups. Console settings commands are retired.
 
 ## Behavior and performance
+
+Framecore 2b uses a native filter for Quiet Dawn's HUD events. It copies event values into a bounded queue and delivers them through the existing game-thread scheduler. Player alerts take priority over enemy-widget bursts; settings retain their save-load behavior. The helper adds no polling thread or continuous readiness timer.
 
 Player creation and possession can activate the HUD when a loading-screen notification is missed. Readiness checks share one finite window of less than ten seconds; they stop after success or exhaustion and can resume on a later player event. An old world's player cannot activate a new session. Ordinary travel retains the settings snapshot.
 
@@ -71,7 +69,7 @@ There are no global HUD searches, widget-tree walks, class-default changes, or r
 
 ## License
 
-MIT. Standalone code informed by the author's HUD Tweaks - Fixes work and the game's HUD structure. No game assets or UE4SS binaries are included.
+MIT. Standalone code informed by the author's HUD Tweaks - Fixes work and the game's HUD structure. No game assets or UE4SS runtime DLL are included. The bundled native helper uses UE4SS and Framecore APIs; their authors retain credit for the runtime and hook implementation. See LICENSES for third-party notices.
 
 Enemy health hiding uses the named health widgets verified in Steam build 25191761. Construction and target/owner changes schedule bounded work on the shared HUD worker, one named child per frame. It does not scan enemies, poll their stats, or change their actual health.
 

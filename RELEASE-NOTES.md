@@ -1,6 +1,8 @@
 # Quiet Dawn - Customizable HUD
 
-Add a one-click Blueprint hook setup script that changes only the required INI setting and backs up the original. Logging now reports the exact hook-registration exception once per hook per session.
+Add a native HUD event bridge for Framecore 2b's Performance profile. HUD hiding, resource alerts and manual peek use filtered native events, with player alerts preserved during enemy-widget bursts and event bindings refreshed after widget replacement.
+
+Include an optional one-click Blueprint hook setup script that changes only the required INI setting and backs up the original. Logging now reports the exact hook-registration exception once per hook per session.
 
 Fix HUD visibility after choosing Load last save on the death screen when the previous HUD has been destroyed or replaced.
 

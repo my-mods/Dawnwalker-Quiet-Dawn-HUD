@@ -1,0 +1,35 @@
+# Building the native HUD bridge
+
+Use Windows x64, Visual Studio 2022's MSVC v143 C++ tools, the Windows 10/11 SDK, Git, and CMake 3.25 or newer. Build **Release** with the shared C runtime (`/MD`). The reference build uses MSVC 19.44.35228 and Windows SDK 10.0.26100.0.
+
+The engine headers require GitHub access to Re-UE4SS/UEPseudo through the linked Epic Games account. They are not included in this repository or the mod archive.
+
+```bat
+git clone https://github.com/UE4SS-RE/RE-UE4SS.git RE-UE4SS
+git -C RE-UE4SS checkout 97b7e501c19d8b2b7c662feee73aaa0dc1f0a4d1
+git -C RE-UE4SS submodule update --init deps/first/Unreal
+cmake -S native -B .local/native-build -A x64 -DUE4SS_SDK=C:/path/to/RE-UE4SS
+cmake --build .local/native-build --config Release
+```
+
+Run the CMake commands from the Quiet Dawn repository. CMake retrieves pinned public header dependencies. The output is `.local/native-build/Release/main.dll` with the Visual Studio generator, or `.local/native-build/main.dll` with Ninja. The package payload is `Data/QuietDawnHUD/dlls/main.dll`. Install the packaged mod through Vortex.
+
+## Compatibility boundary
+
+This bridge targets **UE4SS for BoD Framecore 2b**, DLL SHA-256 `fb1839ee91f71f83d508d44a2763a15ac1bb0c5fb4e504ac0fcfca64376a054a`. It checks the host DLL once before exposing its Lua adapter. It uses the regular Lua hook route when that profile already enables script dispatch, and does not activate its native route on another DLL hash.
+
+The SDK pins RE-UE4SS `97b7e501c19d8b2b7c662feee73aaa0dc1f0a4d1` and UEPseudo `eb40a05f49509bdeb1ac39287032b60af585cca8`. `Framecore2b.def` lists only the host exports used by this bridge; it creates an import library, not a replacement UE4SS DLL. Update the source, ABI checks, import list and hash together when supporting another build. Matching export names alone is insufficient evidence of compatibility.
+
+## Dispatch and lifetime
+
+The helper registers one post-callback through UE4SS's own `ProcessLocalScriptFunction` detour after the disabled standard Lua dispatcher has failed registration. It temporarily enables the host's in-memory installation flag for that call and restores it immediately. No INI is written. The underlying engine interception still runs for Blueprint calls; the native pointer table rejects functions outside Quiet Dawn's fixed HUD list before acquiring a queue lock or entering Lua.
+
+Matching events copy scalar parameters and weak object identities into a 128-event queue. Resource drops survive a coalesced recovery; player HUD events take priority over enemy-widget bursts. One host async action schedules a game-thread delivery chain. It revalidates each object and dispatches at most four callbacks per frame. It uses the host's registered Lua states, object converter, action queue and action lock, and never calls Lua directly from a native detour.
+
+Widget replacement triggers finite, coalesced function rebinding. A save/session change clears pending events and refreshes function identities. No background thread, continuous readiness timer, widget-tree walk or global UObject scan is added. The helper remains loaded until the game exits; live DLL/Lua reload is unsupported.
+
+Logging uses Quiet Dawn's existing `debugLogging` setting. Session summaries include captured/delivered/coalesced/dropped events, stale identities, failures and aggregate native capture time. Frame-time impact must be measured in the game; counts and compilation do not measure FPS.
+
+## Credits
+
+The native integration uses [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS), its UE adaptation headers, and Framecore's exported callback implementation. The build also uses fmt headers. License notices are included under `LICENSES/` in the mod repository and archive. ImGui, ImGuiColorTextEdit and Zydis/Zycore headers are required transitively by the UE4SS SDK; their implementations are not linked into this DLL.

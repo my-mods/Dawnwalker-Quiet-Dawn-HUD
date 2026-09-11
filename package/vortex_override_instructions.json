@@ -27,7 +27,9 @@
       "Nexus/description.bbcode.txt",
       "Nexus/thumbnail.svg",
       "SETTINGS.md",
-      "LICENSES/QuietDawnHUD-ue4ss-common.txt"
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
     ]
   },
   {
@@ -43,7 +45,9 @@
       "Nexus/description.bbcode.txt",
       "Nexus/thumbnail.svg",
       "SETTINGS.md",
-      "LICENSES/QuietDawnHUD-ue4ss-common.txt"
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
     ]
   },
   {
@@ -59,7 +63,9 @@
       "Nexus/description.bbcode.txt",
       "Nexus/thumbnail.svg",
       "SETTINGS.md",
-      "LICENSES/QuietDawnHUD-ue4ss-common.txt"
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
     ]
   },
   {
@@ -75,7 +81,9 @@
       "Nexus/description.bbcode.txt",
       "Nexus/thumbnail.svg",
       "SETTINGS.md",
-      "LICENSES/QuietDawnHUD-ue4ss-common.txt"
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
     ]
   },
   {
@@ -91,7 +99,9 @@
       "Nexus/description.bbcode.txt",
       "Nexus/thumbnail.svg",
       "SETTINGS.md",
-      "LICENSES/QuietDawnHUD-ue4ss-common.txt"
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
     ]
   },
   {
@@ -107,7 +117,9 @@
       "Nexus/description.bbcode.txt",
       "Nexus/thumbnail.svg",
       "SETTINGS.md",
-      "LICENSES/QuietDawnHUD-ue4ss-common.txt"
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
     ]
   },
   {
@@ -123,7 +135,9 @@
       "Nexus/description.bbcode.txt",
       "Nexus/thumbnail.svg",
       "SETTINGS.md",
-      "LICENSES/QuietDawnHUD-ue4ss-common.txt"
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
     ]
   },
   {
@@ -139,7 +153,9 @@
       "Nexus/description.bbcode.txt",
       "Nexus/thumbnail.svg",
       "SETTINGS.md",
-      "LICENSES/QuietDawnHUD-ue4ss-common.txt"
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
     ]
   },
   {
@@ -155,7 +171,9 @@
       "Nexus/description.bbcode.txt",
       "Nexus/thumbnail.svg",
       "SETTINGS.md",
-      "LICENSES/QuietDawnHUD-ue4ss-common.txt"
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
     ]
   },
   {
@@ -171,7 +189,9 @@
       "Nexus/description.bbcode.txt",
       "Nexus/thumbnail.svg",
       "SETTINGS.md",
-      "LICENSES/QuietDawnHUD-ue4ss-common.txt"
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
     ]
   },
   {
@@ -187,7 +207,9 @@
       "Nexus/description.bbcode.txt",
       "Nexus/thumbnail.svg",
       "SETTINGS.md",
-      "LICENSES/QuietDawnHUD-ue4ss-common.txt"
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
     ]
   },
   {
@@ -203,7 +225,81 @@
       "Nexus/description.bbcode.txt",
       "Nexus/thumbnail.svg",
       "SETTINGS.md",
-      "LICENSES/QuietDawnHUD-ue4ss-common.txt"
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "LICENSES/QuietDawnHUD-UE4SS.txt",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Nexus/description.bbcode.txt",
+      "Nexus/thumbnail.svg",
+      "SETTINGS.md",
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "LICENSES\\QuietDawnHUD-UE4SS.txt",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Nexus/description.bbcode.txt",
+      "Nexus/thumbnail.svg",
+      "SETTINGS.md",
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "LICENSES/QuietDawnHUD-fmt.txt",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Nexus/description.bbcode.txt",
+      "Nexus/thumbnail.svg",
+      "SETTINGS.md",
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "LICENSES\\QuietDawnHUD-fmt.txt",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Nexus/description.bbcode.txt",
+      "Nexus/thumbnail.svg",
+      "SETTINGS.md",
+      "LICENSES/QuietDawnHUD-ue4ss-common.txt",
+      "LICENSES/QuietDawnHUD-UE4SS.txt",
+      "LICENSES/QuietDawnHUD-fmt.txt"
     ]
   }
 ]

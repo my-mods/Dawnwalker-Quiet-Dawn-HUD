@@ -52,6 +52,13 @@ for _, key in ipairs({"healthHoldSeconds", "staminaHoldSeconds", "manualPeekSeco
     end
 end
 if not config.enabled then return end
+if QuietDawnNative then QuietDawnNative.begin(config.debugLogging) end
+local sessionRegisterHook=RegisterHook
+local function RegisterHook(path,...)
+    -- Session guards persist; native UFunction identities refresh after travel.
+    if QuietDawnNative then QuietDawnNative.prepare(path) end
+    return sessionRegisterHook(path,...)
+end
 local statNames = {}
 for _, name in ipairs(names) do
     if name == "HumanStats" or name == "VampireStats" then statNames[#statNames+1]=name end

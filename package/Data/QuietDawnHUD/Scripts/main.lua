@@ -6,7 +6,14 @@ local prepared, prepareError = pcall(dofile, directory..'MenuSettings.lua')
 if not prepared then report('Menu settings preparation failed: '..tostring(prepareError)) end
 local diagnostics = {debugLogging=prepared and type(prepareError)=='table' and prepareError.debugLogging==true}
 local api = setmetatable({SaveLoadDiagnostics=diagnostics}, {__index=_G})
+local bridge=dofile(directory..'QuietDawnNative.lua').attach(api,report)
 local session = dofile(directory..'UE4SSCommonSession.lua').new(api, directory, report)
+if bridge then
+    for _,name in ipairs({'pause','close'}) do
+        local original=session[name]
+        session[name]=function(...) bridge.stop();return original(...) end
+    end
+end
 session.watch('/Game/_Dawnwalker/UI/_Unified/HUD/WBP_GameHUD.WBP_GameHUD_C')
 session.watch('/Game/_Dawnwalker/UI/_Unified/Combat/WBP_CombatTargetIndicator.WBP_CombatTargetIndicator_C')
 session.watch('/Game/_Dawnwalker/UI/_Unified/Combat/WBP_CombatCharacterBar.WBP_CombatCharacterBar_C')

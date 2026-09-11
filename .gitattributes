@@ -6,3 +6,6 @@
 LICENSES/*-ue4ss-common.txt -text
 # Preserve the upstream profile bytes used by the compatibility fingerprint.
 Compatibility/Framecore/UE4SS-settings.ini -text -whitespace
+# Keep the native build inputs reproducible across Windows checkouts.
+native/* text eol=lf
+**/dlls/*.dll binary
