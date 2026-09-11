@@ -1,0 +1,27 @@
+{
+  "repository": "https://github.com/my-mods/ue4ss-common",
+  "commit": "6acbc0d66a97fa1bc7000282bf55b378edbae6b9",
+  "modules": [
+    {
+      "source": "src/SettingsStore.lua",
+      "sha256": "db597ebcfbe67fd03aa16c3c2eb4129c346975961e4df0481bb70440aa7cfa26",
+      "destinations": [
+        "package/Data/QuietDawnHUD/Scripts/SettingsStore.lua"
+      ]
+    },
+    {
+      "source": "src/UE4SSCommonDiagnostics.lua",
+      "sha256": "c82aaf42a83c99c4b0f84954f3c04732a9b26bddcb9b20b3ee8892c87b345172",
+      "destinations": [
+        "package/Data/QuietDawnHUD/Scripts/UE4SSCommonDiagnostics.lua"
+      ]
+    },
+    {
+      "source": "LICENSE",
+      "sha256": "a515d2ead541481076e42835ec62bd5e9cb488538eda2aec8b47ab82fcab019d",
+      "destinations": [
+        "LICENSES/QuietDawnHUD-ue4ss-common.txt"
+      ]
+    }
+  ]
+}
