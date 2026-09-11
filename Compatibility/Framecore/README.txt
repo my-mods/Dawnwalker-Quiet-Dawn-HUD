@@ -1,3 +1,7 @@
+Legacy full-INI overlay
+
+Use Enable-Blueprint-Hooks.bat bundled with the main Quiet Dawn mod to edit only the required setting. This older overlay replaces the complete INI and is retained for existing installations. Disable it and deploy your preferred loader configuration before using the script.
+
 Quiet Dawn - Framecore Settings
 
 Quiet Dawn requires Blueprint script hooks. Framecore 2b's Performance and Compatibility profiles both disable them. Start from Performance and set the following existing keys under `[Hooks]` in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS-settings.ini`:

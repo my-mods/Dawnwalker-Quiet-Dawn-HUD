@@ -22,20 +22,19 @@ The compass, quest tracker, quickslots and their change prompt, crosshair, contr
 
 ## Install, update, and remove
 
-### UE4SS for BoD (Framecore)
+### UE4SS setup (Framecore or Vercadi)
 
-Quiet Dawn requires Blueprint script hooks. Framecore 2b's Performance and Compatibility profiles both disable them. Start from Performance and set the following existing keys under `[Hooks]` in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS-settings.ini`:
+Quiet Dawn requires Blueprint script hooks. After deploying the mod, close the game and double-click `Enable-Blueprint-Hooks.bat` in `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/`.
 
-```ini
-HookProcessInternal = 0
-HookProcessLocalScriptFunction = 1
-```
+The script sets or adds `HookProcessLocalScriptFunction = 1` under `[Hooks]` in the runtime's `UE4SS-settings.ini`. It works with either distribution's existing INI, preserving its other settings, comments and encoding. Before an edit it saves the original as `UE4SS-settings.ini.QuietDawn-<unique ID>.bak`. Running it again when the setting is already 1 makes no changes. It does not change `HookProcessInternal` or choose a different profile.
 
-Keep the other Performance settings and restart the game. These settings enable the required dispatcher; they do not establish stability or frame-time performance on every game/runtime build. If enabling it causes a crash, restore the previous configuration and retain the launch log for diagnosis.
+If the INI is missing and the installed `profiles/profile_perf.ini` exists, the script creates the INI from that Framecore Performance template with the hook enabled. If neither file exists, it stops and asks you to restore your loader configuration. It does not guess the loader from its DLL or replace an existing INI with defaults. Duplicate sections/keys or a malformed setting are reported without editing the file.
 
-The optional **Quiet Dawn - Framecore Settings** overlay contains the complete Performance INI with this single change. It replaces the entire INI; it does not merge personal preferences. Back up your current INI first. Import `Quiet-Dawn-Framecore-Settings.zip` through Vortex as **UE4SS (loader)** and make its `UE4SS-settings.ini` win the conflict with Framecore. Keep the main Quiet Dawn package as **UE4SS (Lua mods)**. Disabling the settings overlay and deploying restores the underlying Vortex-managed configuration.
+Restart the game afterward. Rerun the script after a Framecore profile switch or a Vortex deployment/update that replaces the configuration. If Vortex reports an external file change, retain the edited INI when you want this setting preserved. This is a one-time user-run setup tool; the Lua mod does not edit or poll your loader settings.
 
-Framecore's profile switcher replaces the complete INI. Switching profiles, reinstalling the loader, or changing the winning configuration can remove this setting; reapply the custom configuration through Vortex afterward.
+If you used the older **Quiet Dawn - Framecore Settings** full-INI overlay, disable that overlay and deploy your preferred loader configuration before running this script. Back up any preferences first. The new script is bundled with the main Quiet Dawn ZIP and needs no settings overlay.
+
+Enabling the dispatcher meets Quiet Dawn's hook requirement; stability and performance also depend on the game/runtime build. If enabling it causes a crash, retain the launch log and restore the backed-up configuration through your normal Vortex workflow.
 
 1. Close the game. Disable HUD Tweaks and its Fixes submod in Vortex and deploy.
 2. Import `Quiet-Dawn-Customizable-HUD.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.

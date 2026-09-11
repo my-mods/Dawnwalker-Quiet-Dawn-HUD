@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Add an optional Framecore Performance configuration with Blueprint script dispatch enabled.
+- Add a one-click Blueprint hook setup script that edits only the required INI setting and backs up the original. Use the installed Framecore Performance template only when the active INI is missing.
 - Include the exact hook-registration exception in Logging output once per hook per session.
 
 - Restore HUD hiding after death-screen reloads when old HUD objects have been destroyed or replaced.
