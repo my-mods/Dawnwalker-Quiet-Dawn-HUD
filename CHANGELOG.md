@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Restore HUD and enemy-information hiding when loading notifications are missed or player attributes become ready after the first initialization attempt.
+
 - Display compass opacity and visibility thresholds as percentages, explain when resource displays stay visible, and use direct On/Off visibility values.
 
 - Simplify diagnostics to a single Logging switch at the end of Mod Settings.

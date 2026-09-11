@@ -4,6 +4,9 @@ local D = require("QuietDawnDiagnostics")
 -- class-default edits, animation hooks, or Lua coroutines.
 -- Resource reads run only on resource-change and HUD/player lifecycle events.
 local ok, config = pcall(require, "MenuSettings")
+if SaveLoadDiagnostics and ok and type(config)=="table" then
+    SaveLoadDiagnostics.debugLogging = config.debugLogging == true
+end
 if not ok or type(config) ~= "table" then
     print("[Quiet Dawn - Customizable HUD] Invalid configuration; HUD left to the game.")
     return

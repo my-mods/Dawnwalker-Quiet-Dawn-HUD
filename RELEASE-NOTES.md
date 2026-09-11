@@ -1,5 +1,7 @@
 # Quiet Dawn - Customizable HUD
 
+Restore HUD and enemy-information hiding after loads with missing loading notifications or delayed player initialization.
+
 Enemy names and difficulty icons are now hidden by default. Separate Mod Settings toggles let you restore either independently.
 
 Health and stamina now respond to resource-change events and the stat widgets' update functions without recurring stat checks. Alerts remain readable when stat panels were transparent during initialization. A cached-state deadline preserves the hide delay and rapid loss/recovery events.
