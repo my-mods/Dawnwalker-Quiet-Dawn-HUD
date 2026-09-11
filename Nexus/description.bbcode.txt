@@ -36,7 +36,7 @@ Change Compass opacity in Mod Settings: 0 hides it; 0.5 shows it at half opacity
 
 [b]Settings[/b]
 
-Use [url=https://www.nexusmods.com/thebloodofdawnwalker/mods/271]Mod Setting Menu 1.0.5 or later[/url] from the main menu. Press Apply, then fully restart the game. See SETTINGS.md (included with the mod) for all controls, first-use import and preference backups. Console settings commands are retired.
+Use [url=https://www.nexusmods.com/thebloodofdawnwalker/mods/271]Mod Setting Menu 1.0.5 or later[/url] from the main menu. Press Apply, then load a save. See SETTINGS.md (included with the mod) for all controls, first-use import and preference backups. Console settings commands are retired.
 
 [b]Behavior and performance[/b]
 
