@@ -1,5 +1,7 @@
 # Quiet Dawn - Customizable HUD
 
+Fix HUD visibility after choosing Load last save on the death screen when the previous HUD has been destroyed or replaced.
+
 Restore HUD and enemy-information hiding after loads with missing loading notifications or delayed player initialization.
 
 Enemy names and difficulty icons are now hidden by default. Separate Mod Settings toggles let you restore either independently.

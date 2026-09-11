@@ -90,10 +90,8 @@ local function valid(object)
     return object ~= nil and object:IsValid()
 end
 local function opacity(object, value)
-    Session.change('opacity:'..tostring(object:GetAddress()), function()
-        if not valid(object) then return nil, false end
-        return object:GetRenderOpacity()
-    end, function(target) object:SetRenderOpacity(target) end, value)
+    Session.changeObject('opacity:'..tostring(object:GetAddress()), object,
+        'GetRenderOpacity', 'SetRenderOpacity', value)
 end
 local function sameObject(left, right)
     -- Reflected calls can return different Lua wrappers for the same UObject.

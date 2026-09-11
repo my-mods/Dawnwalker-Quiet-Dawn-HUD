@@ -121,6 +121,39 @@ function M.new(api, directory, report)
             return true
         end
         function scope.onClose(callback) scope.cleanup[#scope.cleanup+1] = callback end
+        -- UObject methods can disappear while a retained wrapper still says valid.
+        -- Keep an owned identity snapshot and check it before dispatching a method.
+        -- Use for transient object values; scalar/global journals retain strict cleanup.
+        function scope.changeObject(key, owner, getter, setter, value)
+            local class = owner:GetClass()
+            if not class:IsValid() then return false end
+            local classAddress, name = class:GetAddress(), owner:GetFullName()
+            local function method(which)
+                if not owner:IsValid() then return end
+                local currentClass = owner:GetClass()
+                if not currentClass:IsValid() or currentClass:GetAddress() ~= classAddress
+                    or owner:GetFullName() ~= name then return end
+                local fn = owner[which]
+                if type(fn) == 'function' then return fn end
+                if type(fn) == 'userdata' then
+                    -- TrivialObject placeholders need not expose UObject methods.
+                    local ok, callable = pcall(function() return fn:type() == 'UFunction' and fn:IsValid() end)
+                    if ok and callable then return fn end
+                end
+            end
+            local changed = scope.change(key, function()
+                local fn = method(getter)
+                if not fn then return nil, false end
+                return fn(owner)
+            end, function(target)
+                local fn = method(setter)
+                assert(fn, 'Object setter unavailable: '..setter)
+                fn(owner, target)
+            end, value)
+            local entry = scope.journal[key]
+            if entry then entry.objectValue = true end
+            return changed
+        end
         local ok, err = pcall(env.dofile, file)
         if not ok then
             report('Session initialization failed: '..tostring(err))
@@ -143,22 +176,29 @@ function M.new(api, directory, report)
         for _, slot in pairs(maps) do slot.callback = nil end
         local index, cleanup = #scope.order, #scope.cleanup
         local failed, failedCleanup, firstError = {}, {}, nil
+        local skippedObjects = 0
         local function step()
             -- Small scalar restores can share a frame. A setter that rebuilds
             -- native state returns true to yield; custom cleanup always yields.
             local started = api.os.clock()
+            local budget = 0
             for unit = 1,16 do
             if unit > 1 and api.os.clock()-started >= 0.0005 then break end
+            local cost = index > 0 and (scope.order[index].objectValue and 8 or 1) or 1
+            if budget + cost > 16 then break end
             local entry, callback
             local yieldFrame = false
             local ok, err = pcall(function()
                 if index > 0 then
                     entry = scope.order[index]; index = index - 1
+                    budget = budget + cost
                     local value, valid = entry.get()
                     if valid ~= false and equal(value,entry.last) then
                         yieldFrame = entry.set(entry.original) == true
                         local restored, stillValid = entry.get()
                         assert(stillValid == false or equal(restored,entry.original), 'Restore readback failed')
+                    elseif valid == false and entry.objectValue then
+                        skippedObjects = skippedObjects + 1
                     end
                 elseif cleanup > 0 then
                     callback = scope.cleanup[cleanup]; cleanup = cleanup - 1
@@ -170,12 +210,15 @@ function M.new(api, directory, report)
                 firstError = firstError or tostring(err)
                 if entry then failed[#failed+1] = entry else failedCleanup[#failedCleanup+1] = callback end
             end
-            if not ok or yieldFrame or (index == 0 and cleanup == 0) then break end
+            if not ok or yieldFrame or budget >= 16 or (index == 0 and cleanup == 0) then break end
             end
             if index > 0 or cleanup > 0 then api.ExecuteInGameThreadWithDelay(16, step)
             else
                 closing = false
                 local nextAction = queued or done; queued = nil
+                if skippedObjects > 0 and api.SaveLoadDiagnostics and api.SaveLoadDiagnostics.debugLogging then
+                    report('Session cleanup skipped '..skippedObjects..' unavailable or replaced object values')
+                end
                 if firstError then
                     scope.order, scope.cleanup = failed, failedCleanup
                     current = scope
