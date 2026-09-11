@@ -1,39 +1,7 @@
 -- MIT License. Personal diagnostics are opt-in and read once at startup.
 local D={debugLogging=false}
-local settings={debuglogging=false,summaryseconds=10,slowcallbackms=2,maxeventspersecond=6}
-local canonicalDebug,legacyDebug=false,false
-local base=os.getenv("LOCALAPPDATA")
-if base and (base:match("^%a:[/\\]") or base:match("^\\\\")) then
-    D.path=base:gsub("[/\\]+$", "").."/Dawnwalker/Saved/Config/QuietDawnHUD.ini"
-    local file=io.open(D.path,"rb")
-    if file then
-        local content=file:read(16385) or ""
-        file:close()
-        if #content<=16384 then
-            local section=""
-            content=content:gsub("^\239\187\191", "")
-            for line in content:gmatch("[^\r\n]+") do
-                line=line:gsub("[;#].*$", ""):match("^%s*(.-)%s*$")
-                local header=line:match("^%[([^%]]+)%]$")
-                if header then section=header:lower() end
-                local key,value=line:match("^([%w_]+)%s*=%s*(.-)%s*$")
-                if section=="debug" and key then
-                    key=key:lower();value=value:lower()
-                    if key=="debuglogging" then
-                        canonicalDebug=true
-                        settings.debuglogging=value=="true" or value=="1" or value=="on" or value=="yes"
-                    elseif key=="enabled" then -- legacy personal INI, canonical key wins
-                        legacyDebug=value=="true" or value=="1" or value=="on" or value=="yes"
-                    elseif settings[key]~=nil then
-                        local number=tonumber(value)
-                        if number and number==number and number~=math.huge then settings[key]=number end
-                    end
-                end
-            end
-        end
-    end
-end
-if not canonicalDebug then settings.debuglogging=legacyDebug end
+local cfg=require('MenuSettings')
+local settings={debuglogging=cfg.debugLogging,summaryseconds=cfg.SummarySeconds or 10,slowcallbackms=cfg.SlowCallbackMs or 2,maxeventspersecond=cfg.MaxEventsPerSecond or 6}
 D.debugLogging=settings.debuglogging
 function D.count() end
 function D.event() end

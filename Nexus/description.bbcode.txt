@@ -1,26 +1,58 @@
 [b]Quiet Dawn HUD - Auto-hide HUD[/b]
+
 A quiet view of the world, with health and stamina returning when needed.
 
-Combat, drawing a weapon, lock-on, and focus do not reveal the general HUD. Ordinary enemy and boss health bars, end caps and boss health-phase indicators stay hidden. Enemy stamina, wounds, names and combat warnings retain game behavior. Parry/attack indicators follow the game's difficulty settings; this mod never enables disabled indicators.
+For [b]The Blood of Dawnwalker[/b]. Combat, drawing a weapon, lock-on, and focus no longer reveal the general HUD.
 
-[b]Enemy lock-on marker[/b]
-The neutral lock-on marker is hidden when directional indicators are disabled. Enabling directional indicators restores the shared widget, including its neutral directional display. Attack-direction and parry-direction cues stay hidden when directional indicators are disabled. Unblockable and weak-spot cues retain the shared widget while preserving game visibility rules. No difficulty settings are changed. Marker changes use events rather than a new polling timer.
+- [b]Enemy health:[/b] health bars and their end caps stay hidden for ordinary enemies and bosses, including boss health-phase indicators. Enemy stamina, wounds, names and combat warnings retain game behavior.
+- [b]Enemy lock-on marker:[/b] hidden in its neutral state when directional indicators are disabled. Enabling directional indicators restores the shared widget, including its neutral directional display. Attack-direction and parry-direction cues stay hidden while directional indicators are disabled. Unblockable-attack and weak-spot cues retain the shared widget; game visibility rules remain in effect. Unknown states are left visible rather than suppressing a possible warning.
+- [b]Player health and stamina:[/b] shown together at full opacity after damage or stamina use, while health is strictly below [b]50%[/b], or while stamina is strictly below [b]20%[/b]. Vampire health follows the blood bar; human health follows HP.
+- [b]Hide delay:[/b] [b]4 seconds[/b] after the last health/blood drop; [b]1.5 seconds[/b] after the last stamina drop. Further drops restart the relevant delay. Low health or stamina keeps the panel visible without a timeout. Exactly 50% health or 20% stamina does not qualify by itself.
+- [b]Manual HUD peek:[/b] hold the Controls Legend button (Menu/Options on the standard controller layouts) to show the player HUD for [b]3 seconds[/b]. Repeat the gesture to refresh the peek. When it ends, automatic health/stamina visibility resumes.
+- [b]Parry/attack indicators:[/b] normal game behavior, including difficulty restrictions. This mod never enables disabled indicators.
 
-[b]Health and stamina[/b]
-Both bars appear together at full opacity for 4 seconds after health/blood loss or 1.5 seconds after stamina use. Further drops refresh the relevant delay. Health strictly below 50% or stamina strictly below 20% keeps both bars visible. Vampire health follows the blood bar; human health follows HP. Regeneration alone does not refresh the timer. Resource-change events update the bars, with no recurring stat checks, global object searches, or widget-tree walks. The hide deadline uses cached values.
+The compass, quest tracker, quickslots and their change prompt, crosshair, control legend, buffs, ability cooldowns, focus panel/charge, special-attack cooldown, and XP bar stay hidden. Interaction prompts, dialogue, subtitles, notifications, and menus retain their game behavior. The manual peek reveals the managed player panels at full opacity, including the compass, quests, quickslots, buffs and cooldowns. Enemy health bars and disabled directional indicators keep their configured behavior; menus, dialogue and the game's visibility restrictions remain in control.
 
-Compass, quest tracker, quickslots, crosshair, control legend, buffs, ability cooldowns, focus HUD, special-attack cooldown, and XP stay hidden. Interaction prompts, dialogue, subtitles, notifications, and menus retain normal game behavior. Hold the Controls Legend button (Menu/Options on standard controller layouts) for a 3-second player HUD peek. The peek temporarily shows the compass, quests, quickslots, controls, buffs, cooldowns and other managed player panels. Low health remains visible afterward. Enemy health bars and disabled directional indicators retain their configured behavior.
+[b]Requirements and compatibility[/b]
 
-[b]Optional Show Compass version[/b]
-Quiet-Dawn-HUD-Show-Compass.zip is a complete alternative that shows the compass at 50% opacity. Install only one version; both archives use the same runtime paths.
+- Dawnwalker-compatible UE4SS exposing ExecuteInGameThreadWithDelay, CancelDelayedAction, KismetSystemLibrary.GetFrameCount, and GetGameTimeInSeconds. Development reference: commit 97b7e501c.
+- Stock HUD/API reference: Steam build [b]25191761[/b], executable CL-258042.
+- Disable [b]HUD Tweaks and HUD Tweaks - Fixes[/b] before enabling this mod. They are not dependencies and can compete over opacity despite having different filenames.
+- Mods altering the managed HUD panels require compatibility testing.
 
-[b]Install and update[/b]
-Close the game. Disable HUD Tweaks and HUD Tweaks - Fixes in Vortex and deploy. Import the chosen ZIP, select UE4SS (Lua mods), enable and deploy, then restart. Back up configuration before replacing the existing entry: configuration is replaced in full, not merged. Remove through Vortex with the game closed.
+[b]Install, update, and remove[/b]
 
-[b]Requirements and status[/b]
-Dawnwalker-compatible UE4SS with delayed game-thread callbacks and Kismet frame/game-time functions. Reference game build: 25191761. Native game visibility restrictions remain in effect.
+1. Close the game. Disable HUD Tweaks and its Fixes submod in Vortex and deploy.
+2. Import Quiet-Dawn-HUD.zip. Choose [b]UE4SS (Lua mods)[/b], enable, and deploy.
+3. Runtime files belong under Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/. Restart the game; live Lua reload is not supported.
 
-[b]Configuration and license[/b]
-QuietDawnConfig.lua contains thresholds, hold durations, manualPeek and manualPeekSeconds; restart after editing. MIT licensed. No game assets or loader binaries included.
+Install [b]one version only[/b]. When updating an older version, back up Scripts/QuietDawnConfig.lua and your personal diagnostics INI before Vortex removes or replaces the old package. To import those choices, restore the legacy Lua file beside the new scripts before first launch. The new ZIP supplies QuietDawnDefaults.lua and does not overwrite that legacy filename. After migration, back up the generated settings.ini for future reinstalls. Reinstall through Vortex’s installer when the package layout changes.
 
-Optional personal INI debug logging reports visibility changes and bounded timing summaries. See the included README and INI example. Logging is off by default.
+To remove, close the game, disable/remove the mod in Vortex, and deploy. No save-game data is changed.
+
+[b]Compass[/b]
+
+Change Compass opacity in Mod Settings: 0 hides it; 0.5 shows it at half opacity. Keep its panel toggle enabled. The old Show Compass variant is no longer needed; its preferences can be imported from your backed-up legacy Lua file on first use.
+
+[b]Settings[/b]
+
+Use [url=https://www.nexusmods.com/thebloodofdawnwalker/mods/271]Mod Setting Menu 1.0.5 or later[/url] from the main menu. Press Apply, then fully restart the game. See SETTINGS.md (included with the mod) for all controls, first-use import and preference backups. Console settings commands are retired.
+
+[b]Behavior and performance[/b]
+
+Lifecycle and preset callbacks initialize/reapply the named panels. Health, blood, and stamina change handlers, plus the stat widgets' event-driven update functions, request a coalesced read of the current player's active resource percentages. The update-function hooks also cover direct event-graph dispatch. Blood-bar capacity changes are covered by the same widget update path. There is no recurring stat sampler. The stamina handler is bound by the shared HUD's vampire stats widget during initialization in both forms. Rapid loss followed by recovery still records the loss event.
+
+A single pending hide deadline uses cached resource values and game time; it never rereads health or stamina. Further drops extend the deadline. Pausing preserves the remaining hold time: an outstanding deadline may reschedule for the remaining game-time delay. The same deadline also ends a manual HUD peek, including while health is low. It then restores normal hiding for the other panels while leaving low health visible. Once the relevant holds expire, no deadline timer continues. Panel updates run on separate frames.
+
+Ownership checks use Unreal object addresses. Different Lua wrappers for the same object retain its cached state; old HUD/world events are ignored. Missing readings or unavailable resource hooks leave stat panels under normal game visibility when possible. Failed hook setup uses finite retries and can recover on a subsequent HUD/player lifecycle event. There is no polling fallback. Known health alerts use full opacity even if a stat panel was transparent during initialization. Form selection and the game's visibility presets remain in effect. Unknown forms or unavailable blood data leave the stat panels under game control.
+
+The lock-on marker shares its widget with combat cues, so it cannot be hidden unconditionally. The mod reads the Directional Indicator menu setting at initialization and on settings/HUD events. Enabling it restores cached markers; the widget's separate internal display toggle does not override that choice. Missing setting data leaves the widget under game control. Construction and icon-state callbacks schedule bounded updates through the existing worker. Construction events wait for HUD ownership initialization. HUD and marker ownership readiness use finite retries; exhausted HUD readiness waits for a later lifecycle event, and exhausted marker readiness waits for a later marker event. Debug logging reports readiness failures and direction-setting reads. No difficulty-setting poll or extra timer is added. A fixed 64-entry marker cache/queue bounds work; excess markers remain under normal game control until capacity becomes available.
+
+There are no global HUD searches, widget-tree walks, class-default changes, or recurring configuration reads. The panel worker terminates after each job. Resource events that leave visibility unchanged do not revisit panels. Resource visibility changes revisit only the two stat panels; unrelated HUD fields are checked on lifecycle/preset events and when a manual peek begins or ends. Missing fields are not retried on each resource change. Removing both stat panels from the configuration disables resource hooks, reads and manual peeking.
+
+
+[b]License[/b]
+
+MIT. Standalone code informed by the author's HUD Tweaks - Fixes work and the game's HUD structure. No game assets or UE4SS binaries are included.
+
+Enemy health hiding uses the named health widgets verified in Steam build 25191761. Construction and target/owner changes schedule bounded work on the shared HUD worker, one named child per frame. It does not scan enemies, poll their stats, or change their actual health.

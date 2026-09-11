@@ -23,34 +23,20 @@ The compass, quest tracker, quickslots and their change prompt, crosshair, contr
 ## Install, update, and remove
 
 1. Close the game. Disable HUD Tweaks and its Fixes submod in Vortex and deploy.
-2. Import `Quiet-Dawn-HUD.zip` or the optional `Quiet-Dawn-HUD-Show-Compass.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.
+2. Import `Quiet-Dawn-HUD.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.
 3. Runtime files belong under `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/`. Restart the game; live Lua reload is not supported.
 
-Install **one version only**. Both archives use the same internal ID and runtime paths. Back up configuration before replacing your existing Vortex entry: the shipped configuration is a full replacement, not an automatic merge. To switch variants, disable/remove the old entry and deploy before importing and enabling the other archive. If the installer selected an incorrect layout, reinstall through the installer; redeployment alone preserves it.
+Install **one version only**. When updating an older version, back up `Scripts/QuietDawnConfig.lua` and your personal diagnostics INI before Vortex removes or replaces the old package. To import those choices, restore the legacy Lua file beside the new scripts before first launch. The new ZIP supplies `QuietDawnDefaults.lua` and does not overwrite that legacy filename. After migration, back up the generated `settings.ini` for future reinstalls. Reinstall through Vortex’s installer when the package layout changes.
 
 To remove, close the game, disable/remove the mod in Vortex, and deploy. No save-game data is changed.
 
-## Optional Show Compass version
+## Compass
 
-`Quiet-Dawn-HUD-Show-Compass.zip` is a complete alternative. It displays the compass at 50% opacity; the game may still hide it in dialogue or other special states. Health/stamina timing and all other settings are identical to the standard version.
+Change Compass opacity in Mod Settings: 0 hides it; 0.5 shows it at half opacity. Keep its panel toggle enabled. The old Show Compass variant is no longer needed; its preferences can be imported from your backed-up legacy Lua file on first use.
 
-## Configuration
+## Settings
 
-Edit `Scripts/QuietDawnConfig.lua` through your normal mod configuration workflow and restart the game. Avoid editing a deployed hardlink directly.
-
-`healthThreshold = 0.50` applies to HP in human form and blood divided by normal blood-bar capacity in vampire form. Overdrinking counts as full health. `staminaThreshold = 0.20`. `healthHoldSeconds = 4.0` and `staminaHoldSeconds = 1.5`. Either resource reveals the combined panel at full opacity. Healing/regeneration alone does not extend the delay. The delay uses game time and pauses with the game. Form changes recheck the active resource without treating the change of resource as damage.
-
-`manualPeek = true` enables the existing Controls Legend hold gesture; `manualPeekSeconds = 3.0` controls the reveal duration. Set `manualPeek = false` to disable it. This reuses the game's input action and follows its binding; it does not add an LS+RS chord or change sprint, lock-on or pause bindings. The stock controller hold is approximately half a second.
-
-`panels` lists direct HUD fields. Removing a non-stat entry leaves it under game control. The optional configuration includes `WBP_Compass` and sets `compassOpacity = 0.5`. This value ranges from `0` (transparent) to `1` (opaque). `enabled = false` disables all mod work at startup.
-
-## Debug logging
-
-Copy `QuietDawnHUD.ini.example` to `%LOCALAPPDATA%/Dawnwalker/Saved/Config/QuietDawnHUD.ini`. Set `[Debug] debugLogging=true` to activate logging, or `debugLogging=false` to disable it, then restart the game. This personal file survives mod updates; the archive defaults to logging off.
-
-Messages use `[Quiet Dawn HUD][DEBUG]` in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. They report HUD visibility transitions, panel/marker writes, hook setup, active HP/blood source, received/rejected resource callbacks, unavailable state, and timing/counter summaries on activity. `SummarySeconds=10`, `SlowCallbackMs=2`, and `MaxEventsPerSecond=6` control summary frequency, slow-phase reporting, and the event output limit. Suppressed events are counted. The INI is read once; logging adds no timer or object searches. Disabled diagnostics retain the original work functions without timing wrappers.
-
-Timings use `os.clock` for Lua work phases, including their synchronous native calls. Nested phases overlap: do not sum them. These measurements are not engine frame times or proof of a stutter fix. Resource-event gaps use game time. For diagnosis, reproduce damage, stamina use, lock-on/cues and a save load, then inspect the log before launching another session.
+Use [Mod Setting Menu 1.0.5 or later](https://www.nexusmods.com/thebloodofdawnwalker/mods/271) from the main menu. Press Apply, then fully restart the game. See [SETTINGS.md](SETTINGS.md) for all controls, first-use import and preference backups. Console settings commands are retired.
 
 ## Behavior and performance
 

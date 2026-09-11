@@ -23,34 +23,20 @@ The compass, quest tracker, quickslots and their change prompt, crosshair, contr
 ## Install, update, and remove
 
 1. Close the game. Disable HUD Tweaks and its Fixes submod in Vortex and deploy.
-2. Import `Quiet-Dawn-HUD.zip` or the optional `Quiet-Dawn-HUD-Show-Compass.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.
+2. Import `Quiet-Dawn-HUD.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.
 3. Runtime files belong under `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/`. Restart the game; live Lua reload is not supported.
 
-Install **one version only**. Both archives use the same internal ID and runtime paths. Back up configuration before replacing your existing Vortex entry: the shipped configuration is a full replacement, not an automatic merge. To switch variants, disable/remove the old entry and deploy before importing and enabling the other archive. If the installer selected an incorrect layout, reinstall through the installer; redeployment alone preserves it.
+Install **one version only**. When updating an older version, back up `Scripts/QuietDawnConfig.lua` and your personal diagnostics INI before Vortex removes or replaces the old package. To import those choices, restore the legacy Lua file beside the new scripts before first launch. The new ZIP supplies `QuietDawnDefaults.lua` and does not overwrite that legacy filename. After migration, back up the generated `settings.ini` for future reinstalls. Reinstall through Vortex’s installer when the package layout changes.
 
 To remove, close the game, disable/remove the mod in Vortex, and deploy. No save-game data is changed.
 
-## Optional Show Compass version
+## Compass
 
-`Quiet-Dawn-HUD-Show-Compass.zip` is a complete alternative. It displays the compass at 50% opacity; the game may still hide it in dialogue or other special states. Health/stamina timing and all other settings are identical to the standard version.
+Change Compass opacity in Mod Settings: 0 hides it; 0.5 shows it at half opacity. Keep its panel toggle enabled. The old Show Compass variant is no longer needed; its preferences can be imported from your backed-up legacy Lua file on first use.
 
-## Configuration
+## Settings
 
-Edit `Scripts/QuietDawnConfig.lua` through your normal mod configuration workflow and restart the game. Avoid editing a deployed hardlink directly.
-
-`healthThreshold = 0.50` applies to HP in human form and blood divided by normal blood-bar capacity in vampire form. Overdrinking counts as full health. `staminaThreshold = 0.20`. `healthHoldSeconds = 4.0` and `staminaHoldSeconds = 1.5`. Either resource reveals the combined panel at full opacity. Healing/regeneration alone does not extend the delay. The delay uses game time and pauses with the game. Form changes recheck the active resource without treating the change of resource as damage.
-
-`manualPeek = true` enables the existing Controls Legend hold gesture; `manualPeekSeconds = 3.0` controls the reveal duration. Set `manualPeek = false` to disable it. This reuses the game's input action and follows its binding; it does not add an LS+RS chord or change sprint, lock-on or pause bindings. The stock controller hold is approximately half a second.
-
-`panels` lists direct HUD fields. Removing a non-stat entry leaves it under game control. The optional configuration includes `WBP_Compass` and sets `compassOpacity = 0.5`. This value ranges from `0` (transparent) to `1` (opaque). `enabled = false` disables all mod work at startup.
-
-## Debug logging
-
-Copy `QuietDawnHUD.ini.example` to `%LOCALAPPDATA%/Dawnwalker/Saved/Config/QuietDawnHUD.ini`. Set `[Debug] debugLogging=true` to activate logging, or `debugLogging=false` to disable it, then restart the game. This personal file survives mod updates; the archive defaults to logging off.
-
-Messages use `[Quiet Dawn HUD][DEBUG]` in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. They report HUD visibility transitions, panel/marker writes, hook setup, active HP/blood source, received/rejected resource callbacks, unavailable state, and timing/counter summaries on activity. `SummarySeconds=10`, `SlowCallbackMs=2`, and `MaxEventsPerSecond=6` control summary frequency, slow-phase reporting, and the event output limit. Suppressed events are counted. The INI is read once; logging adds no timer or object searches. Disabled diagnostics retain the original work functions without timing wrappers.
-
-Timings use `os.clock` for Lua work phases, including their synchronous native calls. Nested phases overlap: do not sum them. These measurements are not engine frame times or proof of a stutter fix. Resource-event gaps use game time. For diagnosis, reproduce damage, stamina use, lock-on/cues and a save load, then inspect the log before launching another session.
+Use [Mod Setting Menu 1.0.5 or later](https://www.nexusmods.com/thebloodofdawnwalker/mods/271) from the main menu. Press Apply, then fully restart the game. See [SETTINGS.md](SETTINGS.md) for all controls, first-use import and preference backups. Console settings commands are retired.
 
 ## Behavior and performance
 
@@ -70,3 +56,48 @@ There are no global HUD searches, widget-tree walks, class-default changes, or r
 MIT. Standalone code informed by the author's HUD Tweaks - Fixes work and the game's HUD structure. No game assets or UE4SS binaries are included.
 
 Enemy health hiding uses the named health widgets verified in Steam build 25191761. Construction and target/owner changes schedule bounded work on the shared HUD worker, one named child per frame. It does not scan enemies, poll their stats, or change their actual health.
+
+# Settings
+
+Install [Mod Setting Menu 1.0.5 or later](https://www.nexusmods.com/thebloodofdawnwalker/mods/271) and UE4SS through Vortex. Start the game once, then open Main Menu > Mod Settings > All Mods. Select this mod, change settings and press Apply. **Fully close and restart the game after Apply.** Restore discards unapplied changes; Reset selects this mod’s defaults.
+
+The stable menu ID is `oOCamilleOo_QuietDawnHUD`. The mod generates `settings.ini` beside `mod_settings.ini` in its UE4SS mod folder. This generated file is the authoritative settings store and is not shipped in the ZIP. Existing supported preferences are imported on first use; legacy files are left intact and are no longer synchronized. Back up `settings.ini` before removing/reinstalling the mod or moving its folder. Restore that backup into the same runtime folder before launching. Do not restore an old INI over it.
+
+Missing, duplicate or invalid settings stop configuration loading and are reported in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. Preserve the file before correcting it. If a menu save fails, preserve its temporary/backup files and follow the menu’s recovery instructions. Settings are never polled. `debugLogging` controls additional diagnostic logging; it defaults to Off.
+
+| Group | Setting | Choices or range |
+| --- | --- | --- |
+| General | Enabled | Off, On |
+| Vitals | Health or blood threshold | 0 to 1 |
+| Vitals | Stamina threshold | 0 to 1 |
+| Vitals | Health or blood hold | 0 to 60 |
+| Vitals | Stamina hold | 0 to 60 |
+| Vitals | Manual peek duration | 0 to 60 |
+| Vitals | Manual peek | Off, On |
+| Panels | Compass opacity | 0 to 1 |
+| Diagnostics | Debug logging | Off, On |
+| Diagnostics | Diagnostic summary interval | 5 to 120 |
+| Diagnostics | Slow callback threshold | 0.1 to 1000 |
+| Diagnostics | Diagnostic events per second | 1 to 20 |
+| Panels | HumanStats | Off, On |
+| Panels | VampireStats | Off, On |
+| Panels | Compass | Off, On |
+| Panels | QuestInfo | Off, On |
+| Panels | Quickslots | Off, On |
+| Panels | Crosshair | Off, On |
+| Panels | AA Quickslots | Off, On |
+| Panels | OpenFocusPrompt | Off, On |
+| Panels | Quickslots ChangePrompt | Off, On |
+| Panels | ControlsLegend | Off, On |
+| Panels | BuffContainer | Off, On |
+| Panels | AbilityCooldownsContainer | Off, On |
+| Panels | CombatFocusPanel | Off, On |
+| Panels | FocusCharge Bar | Off, On |
+| Panels | SpecialAttackCooldown | Off, On |
+| Panels | XPBar | Off, On |
+
+Console commands are not used to change settings.
+
+Conditional rows and groups show relevant controls as you edit. Hidden options keep their saved values; hiding an option does not reset it. The interface uses toggles, labeled choices and sliders; the numeric representation in settings.ini is an implementation detail.
+
+When upgrading an older Quiet Dawn package, back up `Scripts/QuietDawnConfig.lua` before Vortex replaces/removes that package. Restore the backed-up file beside the new scripts before first launch to import its panel/compass choices. If it is absent, the mod uses QuietDawnDefaults.lua. Legacy files are never rewritten.

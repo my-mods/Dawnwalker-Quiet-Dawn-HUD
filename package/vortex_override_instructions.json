@@ -13,5 +13,155 @@
     "type": "attribute",
     "key": "description",
     "value": "Quiet HUD with a 3-second player HUD peek on the Controls Legend hold gesture, and full-opacity health alerts below 50% or for 4 seconds after HP/blood loss. Stamina reveals below 20% or for 1.5 seconds after use. Enemy health bars hidden; directional indicators follow the menu setting."
+  },
+  {
+    "type": "attribute",
+    "source": "mod.manifest",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Nexus/description.bbcode.txt",
+      "Nexus/thumbnail.svg",
+      "SETTINGS.md"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "README.txt",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Nexus/description.bbcode.txt",
+      "Nexus/thumbnail.svg",
+      "SETTINGS.md"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "LICENSE",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Nexus/description.bbcode.txt",
+      "Nexus/thumbnail.svg",
+      "SETTINGS.md"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "CHANGELOG.md",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Nexus/description.bbcode.txt",
+      "Nexus/thumbnail.svg",
+      "SETTINGS.md"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "RELEASE-NOTES.md",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Nexus/description.bbcode.txt",
+      "Nexus/thumbnail.svg",
+      "SETTINGS.md"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "Nexus/description.bbcode.txt",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Nexus/description.bbcode.txt",
+      "Nexus/thumbnail.svg",
+      "SETTINGS.md"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "Nexus\\description.bbcode.txt",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Nexus/description.bbcode.txt",
+      "Nexus/thumbnail.svg",
+      "SETTINGS.md"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "Nexus/thumbnail.svg",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Nexus/description.bbcode.txt",
+      "Nexus/thumbnail.svg",
+      "SETTINGS.md"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "Nexus\\thumbnail.svg",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Nexus/description.bbcode.txt",
+      "Nexus/thumbnail.svg",
+      "SETTINGS.md"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "SETTINGS.md",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Nexus/description.bbcode.txt",
+      "Nexus/thumbnail.svg",
+      "SETTINGS.md"
+    ]
   }
 ]

@@ -3,7 +3,7 @@ local D = require("QuietDawnDiagnostics")
 -- Event-driven panel opacity. No widget-tree walks, global object searches,
 -- class-default edits, animation hooks, or Lua coroutines.
 -- Resource reads run only on resource-change and HUD/player lifecycle events.
-local ok, config = pcall(require, "QuietDawnConfig")
+local ok, config = pcall(require, "MenuSettings")
 if not ok or type(config) ~= "table" then
     print("[Quiet Dawn HUD] Invalid configuration; HUD left to the game.")
     return
