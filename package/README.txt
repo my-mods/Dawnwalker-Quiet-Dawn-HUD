@@ -104,7 +104,7 @@ When upgrading an older Quiet Dawn package, back up `Scripts/QuietDawnConfig.lua
 
 **HUD visibility:** On keeps the element visible under the game's normal rules. Off hides it between alerts or HUD peeks. The switches store On as 1 and Off as 0. Compass opacity is the only compass control: 0% hides it, and a positive percentage shows it at that opacity.
 
-**Show HUD:** hold Menu on Xbox, Options on PlayStation, or L on keyboard by default. The action follows any remapping of Controls Legend. Show HUD duration controls the time the HUD remains visible after activation.
+**Show HUD** uses the game's **Toggle Controls Legend** action. Hold **Menu (Xbox)**, **Options (PlayStation)**, or **L (keyboard)** by default. To change the controller button, edit **Toggle Controls Legend** in Controller Tweaks and Remap. For keyboard, change the game's Controls Legend binding. Quiet Dawn follows the remapped action. Show HUD duration controls the time the HUD remains visible after activation.
 
 **Logging** is the final menu setting and the only diagnostic control. Leave it Off for normal play; On writes troubleshooting details to `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`.
 
