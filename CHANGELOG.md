@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Display compass opacity and visibility thresholds as percentages, explain when resource displays stay visible, and use direct On/Off visibility values.
+
 - Simplify diagnostics to a single Logging switch at the end of Mod Settings.
 - Clarify HUD hold durations and default controls. HUD visibility switches now show On for visible and Off for hidden; compass opacity alone controls compass visibility.
 

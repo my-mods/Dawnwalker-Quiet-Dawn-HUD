@@ -32,7 +32,7 @@ To remove, close the game, disable/remove the mod in Vortex, and deploy. No save
 
 ## Compass
 
-Change Compass opacity in Mod Settings: 0 hides it; 0.5 shows it at half opacity. No separate compass toggle is needed; opacity alone controls visibility. The old Show Compass variant is no longer needed; its preferences can be imported from your backed-up legacy Lua file on first use.
+Change Compass opacity in Mod Settings: 0% hides it; 50% shows it at half opacity; 100% is fully opaque. No separate compass toggle is needed; opacity alone controls visibility. The old Show Compass variant is no longer needed; its preferences can be imported from your backed-up legacy Lua file on first use.
 
 ## Settings
 

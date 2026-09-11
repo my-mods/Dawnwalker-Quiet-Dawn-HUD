@@ -21,11 +21,15 @@ local values, err = Store.load(directory, schema, function()
     for _, key in ipairs({'enabled','healthThreshold','staminaThreshold','healthHoldSeconds','staminaHoldSeconds','manualPeek','manualPeekSeconds','compassOpacity'}) do
         local v = cfg[key]; if type(v)=='boolean' then v=v and 1 or 0 end; result[key]=v
     end
-    local known = {};for _, p in ipairs(panels) do known[p]=true;result['panel_'..p]=0 end
+    -- Published Lua configs list hidden panels and use fractional resource values.
+    for _, key in ipairs({'healthThreshold','staminaThreshold','compassOpacity'}) do
+        if result[key]~=nil then result[key]=result[key]*100 end
+    end
+    local known = {};for _, p in ipairs(panels) do known[p]=true;if p~='WBP_Compass' then result['panel_'..p]=1 end end
     local seen = {}
     for _, p in ipairs(cfg.panels) do
         if not known[p] or seen[p] then return nil, 'Unknown or duplicate legacy panel' end
-        seen[p]=true;result['panel_'..p]=1
+        seen[p]=true;if p~='WBP_Compass' then result['panel_'..p]=0 end
     end
     local base=os.getenv('LOCALAPPDATA')
     if not base then return nil, 'LOCALAPPDATA unavailable for legacy migration' end
@@ -64,6 +68,8 @@ if not values then print('[Quiet Dawn - Customizable HUD] Settings rejected: '..
 values.enabled=values.enabled==1;values.manualPeek=values.manualPeek==1;values.debugLogging=values.debugLogging==1
 values.hideEnemyNames=values.hideEnemyNames==1
 values.hideEnemyDifficultyIcons=values.hideEnemyDifficultyIcons==1
--- Compass opacity is authoritative; the legacy compass panel key is retained only for file compatibility.
-values.panels={};for _, p in ipairs(panels) do if p=='WBP_Compass' or values['panel_'..p]==1 then values.panels[#values.panels+1]=p end end
+-- Menu percentages become fractions only at the gameplay boundary.
+for _, key in ipairs({'healthThreshold','staminaThreshold','compassOpacity'}) do values[key]=values[key]/100 end
+-- Visibility switches use 1 = shown and 0 = hidden; compass uses opacity alone.
+values.panels={};for _, p in ipairs(panels) do if p=='WBP_Compass' or values['panel_'..p]==0 then values.panels[#values.panels+1]=p end end
 return values

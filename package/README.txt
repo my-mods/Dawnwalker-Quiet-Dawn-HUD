@@ -32,7 +32,7 @@ To remove, close the game, disable/remove the mod in Vortex, and deploy. No save
 
 ## Compass
 
-Change Compass opacity in Mod Settings: 0 hides it; 0.5 shows it at half opacity. No separate compass toggle is needed; opacity alone controls visibility. The old Show Compass variant is no longer needed; its preferences can be imported from your backed-up legacy Lua file on first use.
+Change Compass opacity in Mod Settings: 0% hides it; 50% shows it at half opacity; 100% is fully opaque. No separate compass toggle is needed; opacity alone controls visibility. The old Show Compass variant is no longer needed; its preferences can be imported from your backed-up legacy Lua file on first use.
 
 ## Settings
 
@@ -70,13 +70,13 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 | General | Enabled | Off, On |
 | Enemies | Hide enemy names | Off, On |
 | Enemies | Hide enemy difficulty icons | Off, On |
-| Vitals | Health or blood threshold | 0 to 1 |
-| Vitals | Stamina threshold | 0 to 1 |
+| Vitals | Keep health visible below | 0% to 100% (default 50%) |
+| Vitals | Keep stamina visible below | 0% to 100% (default 20%) |
 | Vitals | Health / blood hold duration | 0 to 60 seconds |
 | Vitals | Stamina hold duration | 0 to 60 seconds |
 | Vitals | Show HUD duration | 0 to 60 seconds |
 | Vitals | Show HUD on hold | Off, On |
-| HUD visibility | Compass opacity | 0 to 1 |
+| HUD visibility | Compass opacity | 0% to 100% |
 | HUD visibility | Human health and stamina | Off, On |
 | HUD visibility | Vampire blood and stamina | Off, On |
 | HUD visibility | Quest tracker | Off, On |
@@ -102,7 +102,7 @@ Conditional rows and groups show relevant controls as you edit. Hidden options k
 
 When upgrading an older Quiet Dawn package, back up `Scripts/QuietDawnConfig.lua` before Vortex replaces/removes that package. Restore the backed-up file beside the new scripts before first launch to import its panel/compass choices. If it is absent, the mod uses QuietDawnDefaults.lua. Successfully imported legacy Lua and diagnostics files are removed after the new settings are saved and verified.
 
-**HUD visibility:** On keeps the element visible under the game's normal rules. Off hides it between alerts or HUD peeks. These switches preserve existing visibility preferences. Compass opacity is the only compass control: 0 hides it, and a positive value shows it at that opacity. The old compass panel switch is no longer used.
+**HUD visibility:** On keeps the element visible under the game's normal rules. Off hides it between alerts or HUD peeks. The switches store On as 1 and Off as 0. Compass opacity is the only compass control: 0% hides it, and a positive percentage shows it at that opacity.
 
 **Show HUD:** hold Menu on Xbox, Options on PlayStation, or L on keyboard by default. The action follows any remapping of Controls Legend. Show HUD duration controls the time the HUD remains visible after activation.
 
@@ -112,3 +112,7 @@ When upgrading an older Quiet Dawn package, back up `Scripts/QuietDawnConfig.lua
 Bundled library
 
 This mod includes the MIT-licensed ue4ss-common Lua helpers (https://github.com/my-mods/ue4ss-common). No separate library installation is required. Its license is included in LICENSES/QuietDawnHUD-ue4ss-common.txt.
+
+**Visibility thresholds:** keep the health/stamina display visible while human health or vampire blood is below 50%, or stamina is below 20%, by default. Exactly the selected percentage does not trigger the threshold. Damage and stamina use can also reveal it for their hold durations, even above the thresholds. A 0% threshold disables that low-resource trigger. These rules apply when the corresponding HUD visibility switch is Off.
+
+Unreleased menu settings now use percentages and direct On/Off values. Earlier development menu values are not converted. After updating a development installation, use Reset and Apply in Mod Settings, then load a save and set your preferences again. Reset replaces this mod's menu preferences with its defaults; back up settings.ini first if you want to retain a reference.
