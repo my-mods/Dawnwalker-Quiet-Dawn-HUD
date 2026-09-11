@@ -15,6 +15,11 @@
     "value": "Framecore Performance configuration with Blueprint script dispatch enabled."
   },
   {
+    "type": "copy",
+    "source": "UE4SS-settings.ini",
+    "destination": "ue4ss/UE4SS-settings.ini"
+  },
+  {
     "type": "attribute",
     "source": "mod.manifest",
     "key": "modSettingsReleaseMaterials",
