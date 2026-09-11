@@ -1,4 +1,4 @@
-# Quiet Dawn HUD - Auto-hide HUD
+# Quiet Dawn - Customizable HUD
 
 Enemy names and difficulty icons are now hidden by default. Separate Mod Settings toggles let you restore either independently.
 

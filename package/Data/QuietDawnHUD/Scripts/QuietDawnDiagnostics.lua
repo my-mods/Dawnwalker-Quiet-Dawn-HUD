@@ -2,7 +2,7 @@
 local cfg=require('MenuSettings')
 local Diagnostics=require('UE4SSCommonDiagnostics')
 local lastVisible,lastGameTime,lastHealth,lastStamina,gapMax
-local function output(message) print("[Quiet Dawn HUD][DEBUG] "..message) end
+local function output(message) print("[Quiet Dawn - Customizable HUD][DEBUG] "..message) end
 local function summary(s)
     local timings,counts,dropped=s.timings,s.counts,s.dropped
     local parts={string.format("summary interval=%.3fs suppressed=%d sampleGapMaxMs=%.3f",s.interval,dropped,gapMax or 0)}

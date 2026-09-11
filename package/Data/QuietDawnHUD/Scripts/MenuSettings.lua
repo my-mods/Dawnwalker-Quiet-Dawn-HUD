@@ -60,7 +60,7 @@ if not values and err and err:match('^Missing setting: hideEnemy') then
         Store, Store.path(directory), schema,
         {hideEnemyNames=1, hideEnemyDifficultyIcons=1}, 'enemy-labels')
 end
-if not values then print('[Quiet Dawn HUD] Settings rejected: '..tostring(err));return {enabled=false,panels={},debugLogging=false} end
+if not values then print('[Quiet Dawn - Customizable HUD] Settings rejected: '..tostring(err));return {enabled=false,panels={},debugLogging=false} end
 values.enabled=values.enabled==1;values.manualPeek=values.manualPeek==1;values.debugLogging=values.debugLogging==1
 values.hideEnemyNames=values.hideEnemyNames==1
 values.hideEnemyDifficultyIcons=values.hideEnemyDifficultyIcons==1

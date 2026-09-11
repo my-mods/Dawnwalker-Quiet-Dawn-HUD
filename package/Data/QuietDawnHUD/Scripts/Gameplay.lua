@@ -1,11 +1,11 @@
 local D = require("QuietDawnDiagnostics")
--- Quiet Dawn HUD | MIT License
+-- Quiet Dawn - Customizable HUD | MIT License
 -- Event-driven panel opacity. No widget-tree walks, global object searches,
 -- class-default edits, animation hooks, or Lua coroutines.
 -- Resource reads run only on resource-change and HUD/player lifecycle events.
 local ok, config = pcall(require, "MenuSettings")
 if not ok or type(config) ~= "table" then
-    print("[Quiet Dawn HUD] Invalid configuration; HUD left to the game.")
+    print("[Quiet Dawn - Customizable HUD] Invalid configuration; HUD left to the game.")
     return
 end
 local allowed = {HumanStats=true, VampireStats=true, WBP_Compass=true,
@@ -19,7 +19,7 @@ local names, seen = {}, {}
 if type(config.panels) ~= "table" then return end
 for _, name in ipairs(config.panels) do
     if not allowed[name] or seen[name] then
-        print("[Quiet Dawn HUD] Unknown or duplicate panel; disabled.")
+        print("[Quiet Dawn - Customizable HUD] Unknown or duplicate panel; disabled.")
         return
     end
     seen[name] = true
@@ -28,13 +28,13 @@ end
 if type(config.enabled) ~= "boolean" then return end
 if config.compassOpacity~=nil and (type(config.compassOpacity)~="number"
     or config.compassOpacity~=config.compassOpacity or config.compassOpacity<0 or config.compassOpacity>1) then
-    print("[Quiet Dawn HUD] Invalid compass opacity; disabled.")
+    print("[Quiet Dawn - Customizable HUD] Invalid compass opacity; disabled.")
     return
 end
 for _, key in ipairs({"healthThreshold", "staminaThreshold"}) do
     local value=config[key]
     if type(value) ~= "number" or value ~= value or value < 0 or value > 1 then
-        print("[Quiet Dawn HUD] Invalid threshold; disabled.")
+        print("[Quiet Dawn - Customizable HUD] Invalid threshold; disabled.")
         return
     end
 end
@@ -44,7 +44,7 @@ if type(config.manualPeek)~="boolean" then return end
 for _, key in ipairs({"healthHoldSeconds", "staminaHoldSeconds", "manualPeekSeconds"}) do
     local value=config[key]
     if type(value) ~= "number" or value ~= value or value < 0 or value > 60 then
-        print("[Quiet Dawn HUD] Invalid hold duration; disabled.")
+        print("[Quiet Dawn - Customizable HUD] Invalid hold duration; disabled.")
         return
     end
 end
@@ -55,7 +55,7 @@ for _, name in ipairs(names) do
 end
 local manualPeekEnabled=config.manualPeek and config.manualPeekSeconds>0 and #statNames>0
 if type(ExecuteInGameThreadWithDelay) ~= "function" or type(CancelDelayedAction) ~= "function" then
-    print("[Quiet Dawn HUD] Requires cancellable delayed game-thread callbacks; disabled.")
+    print("[Quiet Dawn - Customizable HUD] Requires cancellable delayed game-thread callbacks; disabled.")
     return
 end
 
@@ -486,11 +486,11 @@ local function registerOne()
         if statHookAttempt>=12 then
             if spec[5] then
                 firstFailedPeekHook=firstFailedPeekHook or hookIndex
-                print("[Quiet Dawn HUD] Manual peek input unavailable; automatic health alerts remain enabled.")
+                print("[Quiet Dawn - Customizable HUD] Manual peek input unavailable; automatic health alerts remain enabled.")
             else
                 statHookFailures=true
                 firstFailedStatHook=firstFailedStatHook or hookIndex
-                print("[Quiet Dawn HUD] Resource event hook unavailable; stat panels left to the game: "..spec[1])
+                print("[Quiet Dawn - Customizable HUD] Resource event hook unavailable; stat panels left to the game: "..spec[1])
             end
             hookIndex=hookIndex+1
             statHookAttempt=0
@@ -611,7 +611,7 @@ local function step()
         registerOne()
         attempts = attempts + 1
         if attempts >= 120 then
-            if not warned then print("[Quiet Dawn HUD] HUD hooks not ready; waiting for a lifecycle event."); warned=true end
+            if not warned then print("[Quiet Dawn - Customizable HUD] HUD hooks not ready; waiting for a lifecycle event."); warned=true end
             worker=false
             return true
         end
@@ -648,7 +648,7 @@ local function step()
     markerTurn=not markerTurn
     if markersReady() and (markerTurn or (cursor==0 and not dirty)) then
         local success, reason=pcall(markerStep)
-        if not success then print("[Quiet Dawn HUD] Marker update skipped: "..tostring(reason)) end
+        if not success then print("[Quiet Dawn - Customizable HUD] Marker update skipped: "..tostring(reason)) end
         return false
     end
     if cursor==0 and not dirty then
@@ -783,7 +783,7 @@ wake = function(statsOnly)
                 frameClock=StaticFindObject("/Script/Engine.Default__KismetSystemLibrary")
                 if not valid(frameClock) then
                     worker=false
-                    print("[Quiet Dawn HUD] Frame clock unavailable; waiting for a lifecycle event.")
+                    print("[Quiet Dawn - Customizable HUD] Frame clock unavailable; waiting for a lifecycle event.")
                     return true
                 end
             end
@@ -795,7 +795,7 @@ wake = function(statsOnly)
         if not success then
             worker=false
             cursor=0
-            print("[Quiet Dawn HUD] Update failed: "..tostring(stop))
+            print("[Quiet Dawn - Customizable HUD] Update failed: "..tostring(stop))
             return true
         end
         return stop
@@ -806,7 +806,7 @@ local subscribed = pcall(NotifyOnNewObject, ROOT, function(object)
     wake()
 end)
 if not subscribed then
-    print("[Quiet Dawn HUD] HUD lifecycle notification unavailable; disabled.")
+    print("[Quiet Dawn - Customizable HUD] HUD lifecycle notification unavailable; disabled.")
     return
 end
 local markerSubscribed=pcall(NotifyOnNewObject, MARKER, function(object)
@@ -815,7 +815,7 @@ local markerSubscribed=pcall(NotifyOnNewObject, MARKER, function(object)
     queueMarker(object)
 end)
 if not markerSubscribed then
-    print("[Quiet Dawn HUD] Marker lifecycle notification unavailable; marker left to the game.")
+    print("[Quiet Dawn - Customizable HUD] Marker lifecycle notification unavailable; marker left to the game.")
 end
 for _,spec in ipairs(healthTypes) do
     local subscribedHealth=pcall(NotifyOnNewObject,spec.path,function(object)
@@ -824,7 +824,7 @@ for _,spec in ipairs(healthTypes) do
         end
         queueHealth(object,spec)
     end)
-    if not subscribedHealth then print("[Quiet Dawn HUD] Enemy health notification unavailable: "..spec.path) end
+    if not subscribedHealth then print("[Quiet Dawn - Customizable HUD] Enemy health notification unavailable: "..spec.path) end
 end
 -- At most one outstanding hide deadline. It reads cached percentages and the
 -- game clock only. A pause/extended hold reschedules its remaining delay; once

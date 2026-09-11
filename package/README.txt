@@ -1,4 +1,4 @@
-# Quiet Dawn HUD - Auto-hide HUD
+# Quiet Dawn - Customizable HUD
 
 A quiet view of the world, with health and stamina returning when needed.
 

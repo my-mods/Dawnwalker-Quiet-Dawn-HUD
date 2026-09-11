@@ -1,4 +1,4 @@
--- Quiet Dawn HUD - Auto-hide HUD
+-- Quiet Dawn - Customizable HUD
 -- Read once at startup. Restart the game after editing.
 return {
     enabled = true,

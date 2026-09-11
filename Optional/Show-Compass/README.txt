@@ -1,7 +1,7 @@
 OPTIONAL SHOW COMPASS VERSION
 Complete alternative; install only one version.
 
-# Quiet Dawn HUD - Auto-hide HUD
+# Quiet Dawn - Customizable HUD
 
 A quiet view of the world, with health and stamina returning when needed.
 
@@ -51,7 +51,7 @@ Edit `Scripts/QuietDawnConfig.lua` through your normal mod configuration workflo
 
 Copy `QuietDawnHUD.ini.example` to `%LOCALAPPDATA%/Dawnwalker/Saved/Config/QuietDawnHUD.ini`. Set `[Debug] debugLogging=true` to activate logging, or `debugLogging=false` to disable it, then restart the game. This personal file survives mod updates; the archive defaults to logging off.
 
-Messages use `[Quiet Dawn HUD][DEBUG]` in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. They report HUD visibility transitions, panel/marker writes, hook setup, active HP/blood source, received/rejected resource callbacks, unavailable state, and timing/counter summaries on activity. `SummarySeconds=10`, `SlowCallbackMs=2`, and `MaxEventsPerSecond=6` control summary frequency, slow-phase reporting, and the event output limit. Suppressed events are counted. The INI is read once; logging adds no timer or object searches. Disabled diagnostics retain the original work functions without timing wrappers.
+Messages use `[Quiet Dawn - Customizable HUD][DEBUG]` in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. They report HUD visibility transitions, panel/marker writes, hook setup, active HP/blood source, received/rejected resource callbacks, unavailable state, and timing/counter summaries on activity. `SummarySeconds=10`, `SlowCallbackMs=2`, and `MaxEventsPerSecond=6` control summary frequency, slow-phase reporting, and the event output limit. Suppressed events are counted. The INI is read once; logging adds no timer or object searches. Disabled diagnostics retain the original work functions without timing wrappers.
 
 Timings use `os.clock` for Lua work phases, including their synchronous native calls. Nested phases overlap: do not sum them. These measurements are not engine frame times or proof of a stutter fix. Resource-event gaps use game time. For diagnosis, reproduce damage, stamina use, lock-on/cues and a save load, then inspect the log before launching another session.
 
