@@ -1,0 +1,1 @@
+The runtime payload is Dawnwalker/Binaries/Win64/ue4ss/UE4SS-settings.ini. Install as Root (game folder). This layout note is not a runtime file.

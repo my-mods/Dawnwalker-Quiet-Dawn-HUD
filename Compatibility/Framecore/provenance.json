@@ -1,0 +1,13 @@
+{
+  "upstream": "https://www.nexusmods.com/thebloodofdawnwalker/mods/283",
+  "version": "2b",
+  "profile": "profiles/profile_perf.ini",
+  "baseSha256": "6fb6d5e5acc0f53e850da1b83fab2b12f6506209c6b7b6c15fb5434f06c07689",
+  "customSha256": "2a9ef77e244cfc4ecd0eb74dc15451995dbe3ba39d0bd2b5bb4a27ae6e9b05a0",
+  "changes": {
+    "Hooks.HookProcessLocalScriptFunction": {
+      "before": 0,
+      "after": 1
+    }
+  }
+}

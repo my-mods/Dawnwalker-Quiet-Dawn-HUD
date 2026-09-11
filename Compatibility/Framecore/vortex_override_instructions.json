@@ -1,0 +1,89 @@
+[
+  {
+    "type": "attribute",
+    "key": "customFileName",
+    "value": "Quiet Dawn - Framecore Settings"
+  },
+  {
+    "type": "attribute",
+    "key": "version",
+    "value": "0.0.0"
+  },
+  {
+    "type": "attribute",
+    "key": "description",
+    "value": "Framecore Performance configuration with Blueprint script dispatch enabled."
+  },
+  {
+    "type": "attribute",
+    "source": "mod.manifest",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "Data/QuietDawn-Framecore-Settings-LAYOUT.txt",
+      "provenance.json",
+      "LICENSE"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "README.txt",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "Data/QuietDawn-Framecore-Settings-LAYOUT.txt",
+      "provenance.json",
+      "LICENSE"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "Data/QuietDawn-Framecore-Settings-LAYOUT.txt",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "Data/QuietDawn-Framecore-Settings-LAYOUT.txt",
+      "provenance.json",
+      "LICENSE"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "provenance.json",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "Data/QuietDawn-Framecore-Settings-LAYOUT.txt",
+      "provenance.json",
+      "LICENSE"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "LICENSE",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "Data/QuietDawn-Framecore-Settings-LAYOUT.txt",
+      "provenance.json",
+      "LICENSE"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "Data\\QuietDawn-Framecore-Settings-LAYOUT.txt",
+    "key": "modSettingsReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "Data/QuietDawn-Framecore-Settings-LAYOUT.txt",
+      "provenance.json",
+      "LICENSE"
+    ]
+  }
+]

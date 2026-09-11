@@ -83,6 +83,15 @@ local panels = {}
 local absent, jobNames, fullPending, fullJob = {}, names, false, true
 local cursor, desired, attempts = 0, 1, 0
 local hooks, hookIndex = {}, 1
+local hookErrors = {}
+local function reportHookError(path, success, pre, post)
+    if not D.debugLogging or hookErrors[path] then return end
+    hookErrors[path] = true
+    -- Once per hook per session; preserve the exception even when ordinary
+    -- diagnostic events have reached their rate limit.
+    local reason = success and ("invalid hook IDs: "..tostring(pre)..", "..tostring(post)) or tostring(pre)
+    print("[Quiet Dawn - Customizable HUD][DEBUG] Hook registration failed: "..path.." | "..reason)
+end
 local warned = false
 local frameClock, lastFrame
 local wake, armExpiry
@@ -232,6 +241,8 @@ local function markerHooksStep()
         hooks[path]={pre,post}
         markerHookIndex=markerHookIndex+1
         if D.debugLogging then D.event("hook","registered=%s",path) end
+    else
+        reportHookError(path, success, pre, post)
     end
 end
 local function markerStep()
@@ -389,10 +400,13 @@ local function healthStep()
             spec.hookAttempts=(spec.hookAttempts or 0)+1
             if ok and type(pre)=="number" and type(post)=="number" then
                 hooks[path]={pre,post};spec.eventIndex=eventIndex+1;spec.hookAttempts=0
-            elseif spec.hookAttempts>=12 then
-                spec.failedEvent=spec.failedEvent or eventIndex
-                spec.eventIndex=eventIndex+1;spec.hookAttempts=0
-                if D.debugLogging then D.event("enemyHealth","lifecycle hook unavailable: %s",path) end
+            else
+                reportHookError(path, ok, pre, post)
+                if spec.hookAttempts>=12 then
+                    spec.failedEvent=spec.failedEvent or eventIndex
+                    spec.eventIndex=eventIndex+1;spec.hookAttempts=0
+                    if D.debugLogging then D.event("enemyHealth","lifecycle hook unavailable: %s",path) end
+                end
             end
             keep=true
             return
@@ -481,6 +495,8 @@ local function registerOne()
         hookIndex = hookIndex + 1
         statHookAttempt=0
         if D.debugLogging then D.event("hook","registered=%s",spec[1]) end
+    else
+        reportHookError(spec[1], success, pre, post)
     end
     if not (success and type(pre)=="number" and type(post)=="number") and (spec[4] or spec[5]) then
         statHookAttempt=statHookAttempt+1

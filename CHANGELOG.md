@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add an optional Framecore Performance configuration with Blueprint script dispatch enabled.
+- Include the exact hook-registration exception in Logging output once per hook per session.
+
 - Restore HUD hiding after death-screen reloads when old HUD objects have been destroyed or replaced.
 
 - Restore HUD and enemy-information hiding when loading notifications are missed or player attributes become ready after the first initialization attempt.

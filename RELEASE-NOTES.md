@@ -1,5 +1,7 @@
 # Quiet Dawn - Customizable HUD
 
+Add an optional Framecore Performance configuration with Blueprint script dispatch enabled. Logging now reports the exact hook-registration exception once per hook per session.
+
 Fix HUD visibility after choosing Load last save on the death screen when the previous HUD has been destroyed or replaced.
 
 Restore HUD and enemy-information hiding after loads with missing loading notifications or delayed player initialization.

@@ -15,12 +15,27 @@ The compass, quest tracker, quickslots and their change prompt, crosshair, contr
 
 ## Requirements and compatibility
 
-- Dawnwalker-compatible UE4SS exposing `ExecuteInGameThreadWithDelay`, `CancelDelayedAction`, `KismetSystemLibrary.GetFrameCount`, and `GetGameTimeInSeconds`. Development reference: commit `97b7e501c`.
+- Dawnwalker-compatible UE4SS with Blueprint script hooks enabled, exposing `ExecuteInGameThreadWithDelay`, `CancelDelayedAction`, `KismetSystemLibrary.GetFrameCount`, and `GetGameTimeInSeconds`. Development reference: commit `97b7e501c`.
 - Stock HUD/API reference: Steam build **25191761**, executable CL-258042.
 - Disable **HUD Tweaks and HUD Tweaks - Fixes** before enabling this mod. They are not dependencies and can compete over opacity despite having different filenames.
 - Mods altering the managed HUD panels require compatibility testing.
 
 ## Install, update, and remove
+
+### UE4SS for BoD (Framecore)
+
+Quiet Dawn requires Blueprint script hooks. Framecore 2b's Performance and Compatibility profiles both disable them. Start from Performance and set the following existing keys under `[Hooks]` in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS-settings.ini`:
+
+```ini
+HookProcessInternal = 0
+HookProcessLocalScriptFunction = 1
+```
+
+Keep the other Performance settings and restart the game. These settings enable the required dispatcher; they do not establish stability or frame-time performance on every game/runtime build. If enabling it causes a crash, restore the previous configuration and retain the launch log for diagnosis.
+
+The optional **Quiet Dawn - Framecore Settings** overlay contains the complete Performance INI with this single change. It replaces the entire INI; it does not merge personal preferences. Back up your current INI first. Import `Quiet-Dawn-Framecore-Settings.zip` through Vortex as **Root (game folder)** and make its `UE4SS-settings.ini` win the conflict with Framecore. Keep the main Quiet Dawn package as **UE4SS (Lua mods)**. Disabling the settings overlay and deploying restores the underlying Vortex-managed configuration.
+
+Framecore's profile switcher replaces the complete INI. Switching profiles, reinstalling the loader, or changing the winning configuration can remove this setting; reapply the custom configuration through Vortex afterward.
 
 1. Close the game. Disable HUD Tweaks and its Fixes submod in Vortex and deploy.
 2. Import `Quiet-Dawn-Customizable-HUD.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.
@@ -42,7 +57,7 @@ Use [Mod Setting Menu 1.0.5 or later](https://www.nexusmods.com/thebloodofdawnwa
 
 Player creation and possession can activate the HUD when a loading-screen notification is missed. Readiness checks share one finite window of less than ten seconds; they stop after success or exhaustion and can resume on a later player event. An old world's player cannot activate a new session. Ordinary travel retains the settings snapshot.
 
-Enable **Logging** (the final Mod Settings entry) for activation and HUD diagnostics in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. Apply and load a save; restart the game to diagnose an activation failure that prevents the new snapshot from loading. Activation summaries include the event source, readiness attempts, failure reason and aggregate CPU time. Logging is off by default.
+Enable **Logging** (the final Mod Settings entry) for activation and HUD diagnostics in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. Apply and load a save; restart the game to diagnose an activation failure that prevents the new snapshot from loading. Activation summaries include the event source, readiness attempts, failure reason and aggregate CPU time. Logging is off by default. Hook-registration failures include the exact function path and exception once per hook per session.
 
 Lifecycle and preset callbacks initialize/reapply the named panels. Health, blood, and stamina change handlers, plus the stat widgets' event-driven update functions, request a coalesced read of the current player's active resource percentages. The update-function hooks also cover direct event-graph dispatch. Blood-bar capacity changes are covered by the same widget update path. There is no recurring stat sampler. The stamina handler is bound by the shared HUD's vampire stats widget during initialization in both forms. Rapid loss followed by recovery still records the loss event.
 
