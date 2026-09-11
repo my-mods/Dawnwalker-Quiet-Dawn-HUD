@@ -39,7 +39,7 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 | Panels | SpecialAttackCooldown | Off, On |
 | Panels | XPBar | Off, On |
 
-Turn off **Hide enemy names** to restore enemy name labels (boss names), or **Hide enemy difficulty icons** to restore difficulty indicators for ordinary enemies and bosses. The choices are independent. Apply, then load a save. The player HUD peek keeps both choices in effect. Older settings files that lack these two options use On for each missing option until you save them through the menu; other saved preferences are preserved.
+Turn off **Hide enemy names** to restore enemy name labels (boss names), or **Hide enemy difficulty icons** to restore difficulty indicators for ordinary enemies and bosses. The choices are independent. Apply, then load a save. The player HUD peek keeps both choices in effect. On the next save load, older settings files receive only the missing new options, set to On, so the menu can edit them. Existing preferences and comments are preserved; the original file is retained as `settings.ini.before-enemy-labels`. Keep recovery files if an upgrade error is reported.
 
 Console commands are not used to change settings.
 

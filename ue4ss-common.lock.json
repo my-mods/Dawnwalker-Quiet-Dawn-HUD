@@ -1,6 +1,6 @@
 {
   "repository": "https://github.com/my-mods/ue4ss-common",
-  "commit": "51bdadc508cbff80b42dfb10603c1e5fbcd6d88d",
+  "commit": "99a554afa63a02941a7c05354987e59e4dada52d",
   "modules": [
     {
       "source": "src/SettingsStore.lua",
@@ -35,6 +35,13 @@
       "sha256": "cf6de91a1941f793d5a2adbc262489953ccccef147d8ce4ce49f41404d3e0a4d",
       "destinations": [
         "package/Data/QuietDawnHUD/Scripts/UE4SSDawnwalkerSaveLoad.lua"
+      ]
+    },
+    {
+      "source": "src/UE4SSCommonSettingsUpgrade.lua",
+      "sha256": "7e477c5ea119ad650564c803ab28bcab6802c063bb7c2e27b6c20336156d7b59",
+      "destinations": [
+        "package/Data/QuietDawnHUD/Scripts/UE4SSCommonSettingsUpgrade.lua"
       ]
     }
   ]
