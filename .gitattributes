@@ -2,4 +2,5 @@
 # Bundled dependency bytes must match the immutable library revision.
 **/SettingsStore.lua -text whitespace=cr-at-eol
 **/UE4SSCommon*.lua -text whitespace=cr-at-eol
+**/UE4SSDawnwalkerSaveLoad.lua -text whitespace=cr-at-eol
 LICENSES/*-ue4ss-common.txt -text
