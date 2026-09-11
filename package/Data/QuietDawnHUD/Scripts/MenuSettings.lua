@@ -55,7 +55,7 @@ local values, err = Store.load(directory, schema, function()
 end)
 if not values and err and err:match('^Missing setting: hideEnemy') then
     -- The menu requires physical keys, not just in-memory fallback values.
-    -- This runs inside the save-load session and preserves all existing text.
+    -- Prepare at startup and recheck on save load, preserving all existing text.
     values, err = dofile(directory..'UE4SSCommonSettingsUpgrade.lua').ensure(
         Store, Store.path(directory), schema,
         {hideEnemyNames=1, hideEnemyDifficultyIcons=1}, 'enemy-labels')

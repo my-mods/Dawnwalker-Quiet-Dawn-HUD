@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix the Mod Settings "config key missing or ambiguous" error when opening Quiet Dawn before loading a save after an upgrade.
+
 - Hide enemy names and difficulty icons by default. Add independent Mod Settings toggles to restore either, and preserve older settings files when adding the new defaults.
 
 - Add a 3-second full player HUD peek on the existing Controls Legend hold gesture (Menu/Options on standard controller layouts). Refresh on another hold and restore automatic visibility afterward, keeping low health visible.
