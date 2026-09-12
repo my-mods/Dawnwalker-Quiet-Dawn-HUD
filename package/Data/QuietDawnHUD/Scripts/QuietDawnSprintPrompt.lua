@@ -58,6 +58,7 @@ function M.new(api)
             end
         end
         local current=object:GetRenderOpacity()
+        local wasHidden=entry.hidden
         -- FadeIn animates Border_676 inside this widget. Its root opacity is
         -- independent, so the fade cannot reveal a hidden running prompt.
         if hide then
@@ -69,7 +70,10 @@ function M.new(api)
             if current==0 then api.opacity(object,entry.original) end
             entry.hidden=false
         else entry.original=current end
-        if api.D.debugLogging then api.D.count("sprintPromptChecks") end
+        if api.D.debugLogging then
+            api.D.count("sprintPromptChecks")
+            if wasHidden~=entry.hidden then api.D.event("sprintPrompt","field=%s hidden=%s",field,tostring(entry.hidden)) end
+        end
         cursor,attempts=cursor+1,0
         if cursor>2 and again then cursor,again=1,false end
     end
