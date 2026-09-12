@@ -1,5 +1,7 @@
 # Quiet Dawn - Customizable HUD
 
+- Hide Sprint and Haste running prompts by default. A separate Mod Settings toggle restores them; other action prompts retain game behavior.
+
 Limit all HUD timers to 0–10 seconds in 0.5-second steps. Zero disables the corresponding timed reveal; keep the existing defaults and independent health/stamina thresholds.
 
 Hide the quickslot switch hint through its combat animation, reveal item/ability quickslots briefly after switching with a configurable duration, and show the managed special-attack panel only while its cooldown is running. Prevent small blood fluctuations from endlessly renewing the health display.

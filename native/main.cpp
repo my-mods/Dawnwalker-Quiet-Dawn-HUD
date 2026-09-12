@@ -38,7 +38,7 @@ static_assert(sizeof(CppUserModBase)==192);
 static_assert(offsetof(UnrealInitializer::Config,bHookProcessLocalScriptFunction)==0x3fa);
 static_assert(sizeof(Hook::FCallbackOptions)==72);
 
-enum class Kind { Context, Resource, Entry };
+enum class Kind { Context, Resource, Entry, Prompt };
 struct Spec { const wchar_t* path; Kind kind{Kind::Context}; int entry{}; };
 #define HUD L"/Game/_Dawnwalker/UI/_Unified/HUD/WBP_GameHUD.WBP_GameHUD_C:"
 #define HUMAN L"/Game/_Dawnwalker/UI/_Unified/HUD/PlayerStatPanel/WBP_HUD_HumanStats.WBP_HUD_HumanStats_C:"
@@ -57,7 +57,8 @@ constexpr std::array specs{
     Spec{L"/Game/_Dawnwalker/UI/_Unified/HUD/Timer/WBP_HudTimer.WBP_HudTimer_C:ExecuteUbergraph_WBP_HudTimer",Kind::Entry,455},
     Spec{L"/Game/_Dawnwalker/UI/_Unified/HUD/AbilityCooldowns/WBP_HUD_SpecialAttackCooldown.WBP_HUD_SpecialAttackCooldown_C:SetupCooldownEffect"},
     Spec{L"/Game/_Dawnwalker/UI/_Unified/HUD/AbilityCooldowns/WBP_HUD_SpecialAttackCooldown.WBP_HUD_SpecialAttackCooldown_C:OnCooldownFinished"},
-    Spec{HUD L"ExecuteUbergraph_WBP_GameHUD",Kind::Entry,4146}
+    Spec{HUD L"ExecuteUbergraph_WBP_GameHUD",Kind::Entry,4146},
+    Spec{HUD L"OnSetInputPromptEnabled",Kind::Prompt}
 };
 struct Scalar { int offset{}, bytes{}; };
 struct Binding { UFunction* node{}; QuietDawn::ObjectIdentity identity; std::array<Scalar,2> params{}; };

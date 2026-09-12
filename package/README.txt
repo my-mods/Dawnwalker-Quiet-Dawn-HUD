@@ -1,5 +1,7 @@
 # Quiet Dawn - Customizable HUD
 
+The Sprint and Haste button prompts stay hidden while running. Turn off Hide sprint/haste prompt in Mod Settings to restore them. Other action prompts retain game behavior, and manual HUD peek keeps running prompts hidden.
+
 A quiet view of the world, with health and stamina returning when needed.
 
 For **The Blood of Dawnwalker**. Combat, drawing a weapon, lock-on, and focus no longer reveal the general HUD.
