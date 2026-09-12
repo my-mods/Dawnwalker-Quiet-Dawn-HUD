@@ -60,7 +60,11 @@ constexpr std::array specs{
     Spec{HUD L"ExecuteUbergraph_WBP_GameHUD",Kind::Entry,4146},
     // The prompt worker reads the current HUD prompts after delivery. None of
     // this event's parameters are resource scalars or need to be captured.
-    Spec{HUD L"OnSetInputPromptEnabled"}
+    Spec{HUD L"OnSetInputPromptEnabled"},
+    // Observe the icon render helpers as well as the event wrappers: native
+    // graph dispatch can skip the wrappers. Lua must not call these helpers.
+    Spec{MARKER L"Display Icon State Directionally"},
+    Spec{MARKER L"Display Icon State Non-Directionally"}
 };
 struct Scalar { int offset{}, bytes{}; };
 struct Binding { UFunction* node{}; QuietDawn::ObjectIdentity identity; std::array<Scalar,2> params{}; };

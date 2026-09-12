@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix counterattack directions remaining hidden when combat icon changes bypass the marker event wrapper.
+
 - Fix sprint/haste prompt event handling with the Framecore 2b native bridge.
 - Preserve meaningful blood-loss alerts when smaller fluctuations arrive in the same event burst.
 - Continue hiding available enemy-HUD elements when another child widget is unavailable.

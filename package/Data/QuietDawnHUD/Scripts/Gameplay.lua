@@ -211,7 +211,8 @@ end
 local MARKER = "/Game/_Dawnwalker/UI/_Unified/Combat/WBP_CombatTargetIndicator.WBP_CombatTargetIndicator_C"
 local markerSpecs = {"Construct", "OnObservedStubIconTypeChanged",
     "NotifyIndicatorCleared", "EnableHardLock", "RefreshIndicatorsVisibility",
-    "ToggleShowOnlyMiddleIndicator"}
+    "ToggleShowOnlyMiddleIndicator", "Display Icon State Directionally",
+    "Display Icon State Non-Directionally"}
 local markerHookIndex, markerHookAttempts, markerSeen = 1, 0, false
 local markerQueue, markerPending, markerFirst, markerLast = {}, {}, 1, 0
 local markerCache, markerSlots, markerCount, markerPrune = {}, {}, 0, 1
@@ -240,6 +241,7 @@ local function queueMarker(object, retries)
     if wake then wake("marker") end
 end
 local function markerEvent(context)
+    if D.debugLogging then D.count("markerEvents") end
     queueMarker(unwrap(context))
 end
 local function refreshSettings(context, setting)
@@ -354,21 +356,17 @@ local function markerStep()
         for slot=1,64 do if not markerSlots[slot] then markerSlots[slot]=entry;break end end
         markerCount=markerCount+1
     end
+    if D.debugLogging and readable and entry.loggedIcon~=icon then
+        D.event("markerState","id=%s icon=%s counterOption=%s",tostring(job.address),tostring(icon),tostring(config.showCounterattackDirection))
+        entry.loggedIcon=icon
+    end
     local counter=config.showCounterattackDirection==true and readable and icon~=nil
         and icon>=10 and icon<=13 and icon%1==0
     if counter then
-        -- Stock Blueprint maps these states to the player's required attack
-        -- direction, including the inverted top/bottom weak-spot mapping.
-        -- Do not enable the game's global directions option or invent a timer.
-        -- Both stock display modes draw the weak-spot arrow. Keep the current
-        -- mode so leaving the session needs no style undo. These helpers touch
-        -- only the reticle and four arrows, without callbacks or animation.
-        local middle=object["Hide Directions"]
-        if type(middle)=="boolean" then
-            local display=middle and "Display Icon State Non-Directionally" or "Display Icon State Directionally"
-            object[display](object,icon)
-            if D.debugLogging then D.count("counterRenders") end
-        end
+        -- The game's render helper already selected and styled the correct
+        -- arrow, including its top/bottom mapping. Only reveal its opacity.
+        -- Never call either hooked display helper here: doing so would queue
+        -- our own refresh indefinitely while the opening remains active.
         if not entry.counter and not entry.hidden then entry.original=current end
         if current~=1 then
             opacity(object,1)
