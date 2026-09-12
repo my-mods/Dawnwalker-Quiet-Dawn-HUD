@@ -104,7 +104,7 @@ local lastPawnAddress, lastCombatAddress, lastBloodAddress, lastForm, previousHe
 local previousHealthAmount
 local lastBloodCapacity
 local fullRecoveryArmed=false
-local HEALING_REVEAL_GAIN, FULL_REARM_GAP, FULL_EPSILON=0.01,0.002,0.000001
+local HEALING_REVEAL_GAIN, FULL_REARM_GAP, FULL_EPSILON=0.002,0.002,0.000001
 local healthUntil, staminaUntil = 0, 0
 local panels = {}
 local absent, jobNames, fullPending, fullJob = {}, names, false, true
@@ -747,7 +747,7 @@ local function snapshot()
     end
     -- The same resource events report losses and gains. Use the current
     -- resource snapshot: human events carry HP units, blood events carry blood.
-    -- Small regeneration does not renew the hold; completing a recovery does.
+    -- Gains of 0.2% renew the hold; smaller gains reveal only on full recovery.
     local gain=previousHealthAmount and healthAmount-previousHealthAmount or 0
     local healed=gain>0 and gain+healingScale*FULL_EPSILON>=healingScale*HEALING_REVEAL_GAIN
     local reachedFull=fullRecoveryArmed and health>=1-FULL_EPSILON

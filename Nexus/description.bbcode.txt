@@ -27,7 +27,7 @@ Quiet Dawn uses temporary timers to process queued changes, wait briefly for wid
 [b][color=#A8D5C2]What this means while playing:[/color][/b]
 
 [list]
-[*][b][color=#A8D5C2]Warnings without constant clutter:[/color][/b] At automatic opacity, health/blood and stamina return after relevant changes and stay visible below your chosen thresholds. Small regeneration ticks do not continually refresh the health alert.
+[*][b][color=#A8D5C2]Warnings without constant clutter:[/color][/b] At automatic opacity, health/blood and stamina return after relevant changes and stay visible below your chosen thresholds. Health or blood gains of at least 0.2% of the bar also reveal the panel and refresh its timer, making regeneration visible while filtering smaller fluctuations.
 [*][b][color=#A8D5C2]A quick check on demand:[/color][/b] Hold Controls Legend for a brief HUD peek. Switching items/abilities or advancing time also reveals the relevant panel briefly.
 [*][b][color=#A8D5C2]Keep the help you want:[/color][/b] Adjust 17 panel opacities and independently enable counterattack directions, unblockable warnings, directional parry cues and the lock icon.
 [/list]
@@ -39,7 +39,7 @@ Quiet Dawn uses temporary timers to process queued changes, wait briefly for wid
 [list]
 [*][b][color=#A8D5C2]17 panel opacity controls:[/color][/b] Adjust each managed player panel from 0% to 100% in 5% steps. Zero uses automatic hiding and contextual reveals; a positive value sets its opacity while the game retains contextual visibility rules. Compass opacity alone controls the compass.
 [*][b][color=#A8D5C2]Health and stamina alerts:[/color][/b] At their default 0% opacity, both stat panels appear after damage, meaningful healing or stamina use. They remain visible while health/blood is strictly below 50% or stamina is strictly below 20%. Human health follows HP; vampire health follows the blood bar.
-[*][b][color=#A8D5C2]Adjustable hide delays:[/color][/b] Health alerts last 4 seconds and stamina alerts 1.5 seconds by default. Meaningful changes refresh the corresponding timer. Small regeneration ticks stay quiet; reaching full after a meaningful deficit briefly reveals health.
+[*][b][color=#A8D5C2]Adjustable hide delays:[/color][/b] Health alerts last 4 seconds and stamina alerts 1.5 seconds by default. Damage, stamina use and health/blood gains of at least 0.2% of the bar refresh their corresponding timers. Repeated qualifying regeneration gains keep health visible until its timer expires after the last gain. Smaller gains stay quiet; reaching full after a deficit of at least 0.2% briefly reveals health.
 [*][b][color=#A8D5C2]Manual HUD peek:[/color][/b] Hold Controls Legend (Menu on Xbox, Options on PlayStation, or L on keyboard by default) for a 3-second HUD peek. Repeat to refresh it. Automatic resource alerts resume afterward; enemy information and special prompt rules keep their settings.
 [*][b][color=#A8D5C2]Contextual panels:[/color][/b] Item and ability quickslots appear for 3 seconds after switching. The time panel appears for 4 seconds after time advances. At automatic opacity, the special-attack panel appears only during its cooldown. Timed reveals range from 0 to 10 seconds in 0.5-second steps; zero disables that timed reveal.
 [*][b][color=#A8D5C2]Enemy information:[/color][/b] Hide enemy and boss health bars, end caps and boss health-phase indicators. Enemy names and difficulty icons are hidden by default and can be restored separately. Enemy stamina and wounds retain game behavior.
