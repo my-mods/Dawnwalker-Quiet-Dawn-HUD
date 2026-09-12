@@ -27,7 +27,7 @@ FetchContent_Declare(zydis GIT_REPOSITORY https://github.com/zyantific/zydis.git
 FetchContent_MakeAvailable(fmt imgui textedit zydis)
 set(ZYCORE_INCLUDE "${zydis_SOURCE_DIR}/dependencies/zycore/include" CACHE PATH "Zycore headers pinned by Zydis")
 file(GLOB first_includes LIST_DIRECTORIES true "${UE4SS_SDK}/deps/first/*/include")
-add_library(QuietDawnNative SHARED main.cpp EventQueue.hpp)
+add_library(QuietDawnNative SHARED main.cpp EventQueue.hpp ObjectIdentity.hpp)
 set_target_properties(QuietDawnNative PROPERTIES OUTPUT_NAME main MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 target_compile_features(QuietDawnNative PRIVATE cxx_std_23)
 target_compile_definitions(QuietDawnNative PRIVATE
@@ -46,4 +46,4 @@ add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/Framecore2b.lib"
 add_custom_target(FramecoreImports DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/Framecore2b.lib")
 add_dependencies(QuietDawnNative FramecoreImports)
 target_link_libraries(QuietDawnNative PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/Framecore2b.lib" bcrypt kernel32)
-target_link_options(QuietDawnNative PRIVATE /Brepro /OPT:REF /OPT:ICF)
+target_link_options(QuietDawnNative PRIVATE /Brepro /OPT:REF /OPT:ICF /MAP)

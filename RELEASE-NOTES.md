@@ -2,6 +2,8 @@
 
 Add a native HUD event bridge for Framecore 2b's Performance profile. HUD hiding, resource alerts and manual peek use filtered native events, with player alerts preserved during enemy-widget bursts and event bindings refreshed after widget replacement.
 
+Fix the crash during native HUD hook initialization when an object has no serial number. Preserve deletion and replacement handling without constructing weak or soft references.
+
 Include an optional one-click Blueprint hook setup script that changes only the required INI setting and backs up the original. Logging now reports the exact hook-registration exception once per hook per session.
 
 Fix HUD visibility after choosing Load last save on the death screen when the previous HUD has been destroyed or replaced.

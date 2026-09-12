@@ -3,11 +3,12 @@ EXPORTS
 ??0CppUserModBase@RC@@QEAA@XZ
 ??0FCallbackOptions@Hook@Unreal@RC@@QEAA@$$QEAU0123@@Z
 ??0FName@Unreal@RC@@QEAA@II@Z
+??0FUObjectDeleteListener@Unreal@RC@@QEAA@XZ
 ??1CppUserModBase@RC@@UEAA@XZ
 ??1FCallbackOptions@Hook@Unreal@RC@@QEAA@XZ
-??4FWeakObjectPtr@Unreal@RC@@QEAAXPEBVUObject@12@@Z
+??1FUObjectDeleteListener@Unreal@RC@@UEAA@XZ
+?AddUObjectDeleteListener@FUObjectArray@Unreal@RC@@SAXPEAVFUObjectDeleteListener@23@@Z
 ?FindObject@UObjectGlobals@Unreal@RC@@YAPEAVUObject@23@PEAVUClass@23@PEAV423@PEB_W_NPEAUObjectSearcher@23@@Z
-?Get@FWeakObjectPtr@Unreal@RC@@QEBAPEAVUObject@23@XZ
 ?GetChildProperties@UStruct@Unreal@RC@@QEAAAEAPEAVFField@23@XZ
 ?GetChildren@UStruct@Unreal@RC@@QEAAAEAV?$TObjectPtr@VUField@Unreal@RC@@@23@XZ
 ?GetClass@FField@Unreal@RC@@QEAA?AVFFieldClassVariant@23@XZ
@@ -17,23 +18,28 @@ EXPORTS
 ?GetFName@FFieldClassVariant@Unreal@RC@@QEBA?AVFName@23@XZ
 ?GetFunctionFlags@UFunction@Unreal@RC@@QEAAAEAIXZ
 ?GetInterfaces@UClass@Unreal@RC@@QEAAAEAV?$TArray@UFImplementedInterface@Unreal@RC@@V?$TSizedDefaultAllocator@$0CA@@23@@23@XZ
+?GetInternalIndex@UObjectBase@Unreal@RC@@QEAAHXZ
 ?GetNext@UField@Unreal@RC@@QEAAAEAV?$TObjectPtr@VUField@Unreal@RC@@@23@XZ
 ?GetNextFFieldUnsafe@FField@Unreal@RC@@AEAAPEAV123@XZ
 ?GetOffset_Internal@FProperty@Unreal@RC@@QEAAAEAHXZ
 ?GetParmsSize@UFunction@Unreal@RC@@QEAAAEAGXZ
 ?GetPropertyFlags@FProperty@Unreal@RC@@QEBAAEBW4EPropertyFlags@23@XZ
+?GetSerialNumber@FUObjectItem@Unreal@RC@@QEAAAEAHXZ
 ?GetSuperStruct@UStruct@Unreal@RC@@QEAAAEAPEAV123@XZ
+?GetUObject@FUObjectItem@Unreal@RC@@QEBAPEAVUObject@23@XZ
 ?GlobalConfig@StaticStorage@UnrealInitializer@Unreal@RC@@2UConfig@234@A DATA
 ?HasAllCastFlags@UClass@Unreal@RC@@QEBA_NW4EClassCastFlags@23@@Z
 ?HasAllPropertyFlags@FProperty@Unreal@RC@@QEAA_NW4EPropertyFlags@23@@Z
+?IndexToObject@FUObjectArray@Unreal@RC@@SAPEAUFUObjectItem@23@H@Z
 ?IsInGameThread@Unreal@RC@@YA_NXZ
 ?IsInGameThreadRaw@Unreal@RC@@YA_NXZ
+?IsValid@FUObjectArray@Unreal@RC@@SA_NPEAUFUObjectItem@23@_N@Z
 ?Locals@FFrame@Unreal@RC@@QEAAAEAPEAEXZ
 ?Major@Version@Unreal@RC@@2HA DATA
 ?Minor@Version@Unreal@RC@@2HA DATA
 ?Node@FFrame@Unreal@RC@@QEAAAEAPEAVUFunction@23@XZ
 ?RegisterProcessLocalScriptFunctionPostCallback@Hook@Unreal@RC@@YA_KV?$function@$$A6AXAEAV?$TCallbackIterationData@X@Hook@Unreal@RC@@PEAVUObject@34@AEAUFFrame@34@PEAX@Z@std@@UFCallbackOptions@123@@Z
-?Reset@FWeakObjectPtr@Unreal@RC@@QEAAXXZ
+?RemoveUObjectDeleteListener@FUObjectArray@Unreal@RC@@SAXPEAVFUObjectDeleteListener@23@@Z
 ?ToString@FName@Unreal@RC@@QEAA?AV?$basic_string@_WU?$char_traits@_W@std@@V?$allocator@_W@2@@std@@XZ
 ?UnregisterCallback@Hook@Unreal@RC@@YA_N_K@Z
 ?actions_lock@LuaMod@RC@@QEAAXXZ

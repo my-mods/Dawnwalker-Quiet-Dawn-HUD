@@ -3,19 +3,23 @@
 #include <array>
 #include <cstdint>
 #include <cstddef>
+#include "ObjectIdentity.hpp"
 
 namespace QuietDawn {
-// Owned scalar data only. UObject identity is an index/serial pair, never a
-// borrowed FFrame, parameter address, property, or Lua object.
+// Owned scalars and an opaque object address, never a borrowed FFrame,
+// parameter address, property, or Lua object. Deletion removes queued owners.
 struct Event {
     int id{}, index{}, serial{};
     double value{}, previous{};
     bool resource{}, priority{};
+    uintptr_t address{};
 };
 class EventQueue {
     std::array<Event, 128> events{};
     size_t first{}, count{};
+    ObjectInterest interest;
     void remove(size_t n) {
+        interest.remove(events[(first+n)%events.size()].index);
         if (!n) first=(first+1)%events.size();
         else for(size_t i=n;i+1<count;++i) events[(first+i)%events.size()]=events[(first+i+1)%events.size()];
         --count;
@@ -23,13 +27,23 @@ class EventQueue {
 public:
     bool track{};
     uint64_t merged{}, overflow{};
-    void clear() { first = count = 0; }
+    void clear() { first = count = 0; interest.clear(); }
+    bool mayContain(int index) const { return interest.contains(index); }
+    size_t invalidate(int index, uintptr_t address) {
+        size_t removed=0;
+        for(size_t n=0;n<count;) {
+            const auto& event=events[(first+n)%events.size()];
+            if(event.index==index && event.address==address) { remove(n);++removed; }
+            else ++n;
+        }
+        return removed;
+    }
     bool empty() const { return count == 0; }
     size_t size() const { return count; }
     void push(Event event) {
         for (size_t n=0; n<count; ++n) {
             auto& prior=events[(first+n)%events.size()];
-            if (prior.id!=event.id || prior.index!=event.index || prior.serial!=event.serial) continue;
+            if (prior.id!=event.id || prior.index!=event.index || prior.serial!=event.serial || prior.address!=event.address) continue;
             // A later recovery must not erase the damage/stamina-use alert.
             if (!(prior.resource && prior.value<prior.previous) || event.value<event.previous) prior=event;
             if (track) ++merged;
@@ -43,6 +57,7 @@ public:
             remove(victim==count ? 0 : victim); if (track) ++overflow;
         }
         events[(first+count++)%events.size()]=event;
+        interest.add(event.index);
     }
     bool pop(Event& event) {
         if (!count) return false;

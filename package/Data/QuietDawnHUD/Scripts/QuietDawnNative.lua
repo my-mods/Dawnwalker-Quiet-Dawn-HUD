@@ -1,5 +1,5 @@
 -- MIT. Optional Framecore 2b adapter. Native captures contain owned scalar
--- values and weak identities; delivery uses a UE4SS-created game-thread state.
+-- values and deletion-checked identities; delivery uses a UE4SS-created game-thread state.
 local M = {}
 function M.attach(api, report)
     if type(api._QDNInit)~='function' then return end
@@ -77,7 +77,7 @@ function M.attach(api, report)
         assert(frameClock and frameClock:IsValid(),'Native HUD frame clock unavailable')
         api._QDNBegin(debugLogging==true)
         logging=debugLogging==true;active=true
-        if logging then report('Native HUD bridge active (Framecore 2b).') end
+        if logging then report('Native HUD bridge active (Framecore 2b; deletion tracking).') end
     end
     function bridge.prepare(path)
         if path:sub(1,6)=='/Game/' then return api._QDNBind(path) end

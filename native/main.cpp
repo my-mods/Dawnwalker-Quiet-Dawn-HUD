@@ -9,7 +9,7 @@
 #include <Unreal/UObjectGlobals.hpp>
 #include <Unreal/CoreUObject/UObject/Class.hpp>
 #include <Unreal/CoreUObject/UObject/UnrealType.hpp>
-#include <Unreal/FWeakObjectPtr.hpp>
+#include <Unreal/UObjectArray.hpp>
 #include <Unreal/Core/Windows/AllowWindowsPlatformTypes.hpp>
 #include <Windows.h>
 #include <bcrypt.h>
@@ -56,8 +56,8 @@ constexpr std::array specs{
     Spec{L"/Game/_Dawnwalker/UI/_Unified/Combat/WBP_Combat_BossBar.WBP_Combat_BossBar_C:Update Owner"}
 };
 struct Scalar { int offset{}, bytes{}; };
-struct Binding { UFunction* node{}; FWeakObjectPtr weak; std::array<Scalar,2> params{}; };
-struct State {
+struct Binding { UFunction* node{}; QuietDawn::ObjectIdentity identity; std::array<Scalar,2> params{}; };
+struct State final: FUObjectDeleteListener {
     std::mutex mutex;
     std::atomic_bool active{};
     bool debug{}, pending{};
@@ -68,10 +68,55 @@ struct State {
     // Mutated/read only on the game thread. The inactive fast exit is atomic.
     std::array<int,64> table{};
     QuietDawn::EventQueue queue;
+    QuietDawn::ObjectInterest bindingInterest;
+    bool listening{};
     uint64_t matched{}, delivered{}, stale{}, failures{}, nanos{};
+    void NotifyUObjectDeleted(const UObjectBase* object,int32 index) override {
+        if (!active.load(std::memory_order_acquire) ||
+            (!bindingInterest.contains(index) && !queue.mayContain(index))) return;
+        // This callback can run during GC: compare owned values only. No Lua,
+        // UObject access, allocation, reflection, logging, or object-array scan.
+        std::lock_guard lock(mutex);
+        const auto address=reinterpret_cast<uintptr_t>(object);
+        for(auto& binding:bindings) if(binding.identity.invalidate(index,address)) {
+            bindingInterest.remove(index);
+            if(debug) ++stale;
+        }
+        const auto removed=queue.invalidate(index,address);
+        if(debug) stale+=removed;
+    }
+    void OnUObjectArrayShutdown() override {
+        active=false;
+        detach();
+        std::lock_guard lock(mutex);
+        queue.clear();bindingInterest.clear();pending=false;
+        for(auto& binding:bindings) binding.identity={};
+    }
+    void attach() {
+        if(!listening) { FUObjectArray::AddUObjectDeleteListener(this);listening=true; }
+    }
+    void detach() {
+        if(listening) { FUObjectArray::RemoveUObjectDeleteListener(this);listening=false; }
+    }
 };
 std::shared_ptr<State> current;
 void gameThread() { if (!IsInGameThread()) throw std::runtime_error("Quiet Dawn native operation requires the game thread"); }
+QuietDawn::ObjectIdentity identify(UObject* object) {
+    if(!object) return {};
+    const auto index=object->GetInternalIndex();
+    auto item=FUObjectArray::IndexToObject(index);
+    if(!item || item->GetUObject()!=object || !FUObjectArray::IsValid(item,false)) return {};
+    // Read an existing serial; never ask UE4SS to allocate one. Its allocation
+    // fallback converts a soft reference and crashes on this runtime/game.
+    return {reinterpret_cast<uintptr_t>(object),index,item->GetSerialNumber()};
+}
+UObject* resolve(const QuietDawn::ObjectIdentity& identity) {
+    if(!identity.address) return nullptr;
+    auto item=FUObjectArray::IndexToObject(identity.index);
+    if(!item || !FUObjectArray::IsValid(item,false)) return nullptr;
+    auto object=item->GetUObject();
+    return identity.matches(reinterpret_cast<uintptr_t>(object),item->GetSerialNumber()) ? object : nullptr;
+}
 size_t bucket(UFunction* p) { auto n=reinterpret_cast<uintptr_t>(p)>>4; return (n^(n>>13))&63; }
 double readScalar(const uint8_t* locals, Scalar s) {
     if (s.bytes==8) { double v; std::memcpy(&v,locals+s.offset,8); return v; }
@@ -106,7 +151,7 @@ void capture(const std::shared_ptr<State>& state, UObject* object, FFrame& stack
         if (!state->active.load() || !state->mod || state->actionRef==LUA_NOREF) return;
         const auto start=state->debug ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
         const auto& binding=state->bindings[id-1];
-        if (binding.weak.Get()!=node || !object) { if (state->debug) ++state->stale; return; }
+        if (resolve(binding.identity)!=node || !object) { if (state->debug) ++state->stale; return; }
         auto kind=specs[id-1].kind;
         Event event; event.id=id; event.priority=id<=10;
         if (kind!=Kind::Context) {
@@ -122,8 +167,9 @@ void capture(const std::shared_ptr<State>& state, UObject* object, FFrame& stack
                 if (event.value==event.previous) return;
             }
         }
-        FWeakObjectPtr weak(object);
-        event.index=weak.ObjectIndex; event.serial=weak.ObjectSerialNumber;
+        const auto identity=identify(object);
+        if(!identity.address) { if(state->debug) ++state->stale;return; }
+        event.index=identity.index;event.serial=identity.serial;event.address=identity.address;
         state->queue.push(event);
         if (state->debug) ++state->matched;
         if (!state->pending) {
@@ -147,7 +193,7 @@ int bind(State& state, std::string_view path) {
     for (;id<specs.size();++id) if (wide==specs[id].path) break;
     if (id==specs.size()) throw std::runtime_error("Blueprint function is outside Quiet Dawn's native hook list");
     auto& binding=state.bindings[id];
-    if (binding.node && binding.weak.Get()==binding.node) return static_cast<int>(id+1);
+    if (binding.node && resolve(binding.identity)==binding.node) return static_cast<int>(id+1);
     auto node=UObjectGlobals::StaticFindObject<UFunction*>(nullptr,nullptr,wide);
     if (!node) throw std::runtime_error("Blueprint UFunction is not loaded");
     if (node->HasAnyFunctionFlags(EFunctionFlags::FUNC_Native)) throw std::runtime_error("Expected a Blueprint function");
@@ -167,10 +213,14 @@ int bind(State& state, std::string_view path) {
         }
         if (n!=needed) throw std::runtime_error("Missing HUD event parameters");
     }
-    binding={node,FWeakObjectPtr(node),params};
+    const auto identity=identify(node);
+    if(!identity.address) throw std::runtime_error("Blueprint UFunction is no longer valid");
+    if(binding.identity.address) state.bindingInterest.remove(binding.identity.index);
+    binding={node,identity,params};
+    state.bindingInterest.add(identity.index);
     // Rebuild this tiny pointer table only when binding a loaded function.
     state.table.fill(0);
-    for (size_t n=0;n<state.bindings.size();++n) if (auto p=state.bindings[n].node) {
+    for (size_t n=0;n<state.bindings.size();++n) if (auto p=state.bindings[n].identity.address ? state.bindings[n].node : nullptr) {
         size_t at=bucket(p); while(state.table[at]) at=(at+1)&63;
         state.table[at]=static_cast<int>(n+1);
     }
@@ -219,7 +269,9 @@ public:
             gameThread(); const bool debug=l.get_bool();
             std::lock_guard lock(s->mutex);
             s->active=false; s->queue.clear(); s->pending=false; s->table.fill(0);
+            s->bindingInterest.clear();
             for(auto& b:s->bindings) b=Binding{};
+            s->attach();
             s->debug=debug; s->matched=s->delivered=s->stale=s->failures=s->nanos=0;
             s->queue.track=debug;
             s->queue.merged=s->queue.overflow=0;
@@ -247,8 +299,7 @@ public:
             auto s=current;
             gameThread(); Event event;
             { std::lock_guard lock(s->mutex); if (!s->active || !s->queue.pop(event)) return 0; }
-            FWeakObjectPtr weak; weak.ObjectIndex=event.index; weak.ObjectSerialNumber=event.serial;
-            auto object=weak.Get();
+            auto object=resolve({event.address,event.index,event.serial});
             { std::lock_guard lock(s->mutex); if (s->debug) {if(object) ++s->delivered;else ++s->stale;} }
             if (!object) { l.set_integer(0); return 1; }
             l.set_integer(event.id); LuaType::auto_construct_object(l,object);
@@ -275,7 +326,11 @@ public:
         std::lock_guard lock(state->mutex); state->active=false; state->mod=nullptr;
         state->actionRef=LUA_NOREF; state->queue.clear(); state->pending=false;
     }
-    ~QuietDawnMod() override { state->active=false; if(state->hook!=Hook::ERROR_ID) Hook::UnregisterCallback(state->hook); }
+    ~QuietDawnMod() override {
+        state->active=false;
+        if(state->hook!=Hook::ERROR_ID) Hook::UnregisterCallback(state->hook);
+        state->detach();
+    }
 };
 }
 extern "C" __declspec(dllexport) RC::CppUserModBase* start_mod() { return new QuietDawnMod; }

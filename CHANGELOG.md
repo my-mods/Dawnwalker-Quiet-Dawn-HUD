@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix a crash during HUD hook initialization under Framecore 2b. Preserve object deletion and replacement checks without creating weak or soft references.
+
 - Add a native HUD event bridge for Framecore 2b, supporting HUD hiding, resource alerts and manual peek with its Performance profile. Preserve brief resource drops, prioritize player alerts during event bursts, and refresh event bindings when HUD widgets are replaced.
 
 - Include an optional one-click Blueprint hook setup script that edits only the required INI setting and backs up the original. Use the installed Framecore Performance template only when the active INI is missing.
