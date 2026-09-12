@@ -1,5 +1,9 @@
 # Quiet Dawn - Customizable HUD
 
+- Add separate toggles for unblockable warnings, directional parry cues and the lock icon alongside counterattack directions. All four default to Off.
+- Hide the center dot and suppress center lock icons while showing directions.
+- Add a common combat cue size slider from 10% to 200% in 10% steps, defaulting to 100%.
+
 - Fix counterattack directions remaining hidden when combat icon changes bypass the marker event wrapper.
 
 - Fix sprint/haste prompt event handling with the Framecore 2b native bridge.

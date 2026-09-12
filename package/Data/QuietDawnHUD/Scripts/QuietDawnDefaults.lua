@@ -5,6 +5,10 @@ return {
     hideEnemyNames = true,
     hideEnemyDifficultyIcons = true,
     showCounterattackDirection = false,
+    showUnblockableWarning = false,
+    showDirectionalParry = false,
+    showLockIcon = false,
+    combatCueSize = 100,
     -- Both stat panels show together when either resource needs attention.
     healthThreshold = 0.50, -- strictly below 50 percent; vampire form uses blood
     staminaThreshold = 0.20,

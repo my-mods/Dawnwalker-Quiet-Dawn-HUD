@@ -6,12 +6,18 @@ local function choices(maximum, step)
 end
 local durations = choices(10, 0.5)
 local opacities = choices(100, 5)
+local cueSizes = {}
+for value=10,200,10 do cueSizes[#cueSizes+1]=value end
 return {
     {key="hideSprintPrompt", default=1, values={0,1}},
     {key="enabled", default=1, values={0,1}},
     {key="hideEnemyNames", default=1, values={0,1}},
     {key="hideEnemyDifficultyIcons", default=1, values={0,1}},
     {key="showCounterattackDirection", default=0, values={0,1}},
+    {key="showUnblockableWarning", default=0, values={0,1}},
+    {key="showDirectionalParry", default=0, values={0,1}},
+    {key="showLockIcon", default=0, values={0,1}},
+    {key="combatCueSize", default=100, values=cueSizes},
     {key="healthThreshold", default=50, min=0, max=100, integer=false},
     {key="staminaThreshold", default=20, min=0, max=100, integer=false},
     {key="healthHoldSeconds", default=4, values=durations},

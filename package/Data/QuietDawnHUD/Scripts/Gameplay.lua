@@ -54,6 +54,7 @@ for _, key in ipairs({"healthHoldSeconds", "staminaHoldSeconds", "manualPeekSeco
     end
 end
 if not config.enabled then return end
+local applyCombatCue=require("QuietDawnCombatCues").new(config,D,Session)
 if QuietDawnNative then QuietDawnNative.begin(config.debugLogging) end
 local sessionRegisterHook=RegisterHook
 local function RegisterHook(path,...)
@@ -207,7 +208,7 @@ local function timeChanged(context,entryParam)
     wake("time")
 end
 -- The game shares this widget between neutral lock-on, directions and cues.
--- Hide neutral and directional cues when directions are disabled.
+-- Each cue category follows its own Quiet Dawn setting; the dot stays hidden.
 local MARKER = "/Game/_Dawnwalker/UI/_Unified/Combat/WBP_CombatTargetIndicator.WBP_CombatTargetIndicator_C"
 local markerSpecs = {"Construct", "OnObservedStubIconTypeChanged",
     "NotifyIndicatorCleared", "EnableHardLock", "RefreshIndicatorsVisibility",
@@ -341,76 +342,31 @@ local function markerStep()
         end
         return
     end
-    -- This Blueprint property is updated by the game's directional and
-    -- non-directional display paths. Verified build 25232147: 0=neutral,
-    -- 1..8=attack/parry directions, 9=unblockable, 10..13=weak spots.
-    -- Counter openings reuse the weak-spot states (including perfect parries).
-    -- Preserve the entire widget whenever the actual menu option enables cues.
-    -- Unknown settings fail open so an unreadable option cannot suppress them.
     local readable,icon=pcall(function() return tonumber(object["Currently Displayed Icon Type"]) end)
     local current=object:GetRenderOpacity()
     if not entry then
         entry={object=object,address=job.address,original=current}
         markerCache[job.address]=entry
-        -- Fixed-size plain-Lua slot selection; no object reads or traversal.
         for slot=1,64 do if not markerSlots[slot] then markerSlots[slot]=entry;break end end
         markerCount=markerCount+1
     end
-    if D.debugLogging and readable and entry.loggedIcon~=icon then
-        D.event("markerState","id=%s icon=%s counterOption=%s",tostring(job.address),tostring(icon),tostring(config.showCounterattackDirection))
-        entry.loggedIcon=icon
-    end
-    local counter=config.showCounterattackDirection==true and readable and icon~=nil
-        and icon>=10 and icon<=13 and icon%1==0
-    if counter then
-        -- The game's render helper already selected and styled the correct
-        -- arrow, including its top/bottom mapping. Only reveal its opacity.
-        -- Never call either hooked display helper here: doing so would queue
-        -- our own refresh indefinitely while the opening remains active.
-        if not entry.counter and not entry.hidden then entry.original=current end
-        if current~=1 then
-            opacity(object,1)
-            if D.debugLogging then D.count("markerWrites") end
-        end
-        if D.debugLogging and (not entry.counter or entry.counterIcon~=icon) then
-            D.event("counter","id=%s icon=%s full-opacity direction",tostring(job.address),tostring(icon))
-        end
-        entry.counter,entry.counterIcon,entry.hidden=true,icon,false
-        return
-    elseif entry.counter then
-        -- Restore our reveal before applying the current icon's normal rule.
-        -- A different opacity written by the game while the cue was active wins.
-        if current==1 then opacity(object,entry.original);current=entry.original
-        else entry.original=current end
-        if D.debugLogging then D.event("counter","id=%s opening ended",tostring(job.address)) end
-        entry.counter,entry.counterIcon=false,nil
-    end
-    -- Retain the marker even when settings are unavailable, so a later
-    -- successful settings event can revisit it without global discovery.
-    if not readable or icon==nil or directionsEnabled==nil then
-        if entry.hidden then
-            opacity(object, entry.original)
-            entry.hidden=false
-        end
+    local applied,shown=applyCombatCue(object,entry,readable and icon or nil)
+    if not applied then
+        if entry.lastOpacity~=nil and current==entry.lastOpacity then opacity(object,entry.original) end
+        entry.lastOpacity=nil
         if job.retries<8 then queueMarker(object,job.retries+1) end
+        if D.debugLogging and (job.retries==0 or job.retries==8) then
+            D.event("combatCueReadiness","id=%s icon=%s attempt=%d/9",tostring(job.address),tostring(icon),job.retries+1)
+        end
         return
     end
-    if icon>=0 and icon<=8 and icon%1==0 and not directionsEnabled then
-        if not entry.hidden or current~=0 then entry.original=current end
-        if current~=0 then
-            opacity(object, 0)
-            if D.debugLogging then D.count("markerWrites");D.event("marker","id=%s icon=%s opacity=%.3f->0",tostring(job.address),tostring(icon),current) end
-        end
-        entry.hidden=true
-    elseif entry.hidden then
-        if current~=entry.original then
-            opacity(object, entry.original)
-            if D.debugLogging then D.count("markerWrites");D.event("marker","id=%s icon=%s opacity=%.3f->%.3f",tostring(job.address),tostring(icon),current,entry.original) end
-        end
-        entry.hidden=false
-    else
-        entry.original=current -- retain the game's opacity while a cue is active
+    if entry.lastOpacity==nil or current~=entry.lastOpacity then entry.original=current end
+    local target=shown and 1 or 0
+    if current~=target then
+        opacity(object,target)
+        if D.debugLogging then D.count("markerWrites") end
     end
+    entry.lastOpacity=target
 end
 markerStep=D.wrap("marker",markerStep)
 markerHooksStep=D.wrap("hook",markerHooksStep)

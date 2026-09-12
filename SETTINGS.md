@@ -12,7 +12,11 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 | HUD visibility | Hide sprint/haste prompt | Off, On (default On) |
 | Enemies | Hide enemy names | Off, On |
 | Enemies | Hide enemy difficulty icons | Off, On |
-| Enemies | Show counterattack direction | Off (default), On |
+| Combat cues | Show counterattack direction | Off (default), On |
+| Combat cues | Show unblockable warning | Off (default), On |
+| Combat cues | Show directional parry cues | Off (default), On |
+| Combat cues | Show lock icon | Off (default), On |
+| Combat cues | Combat cue size | 10%–200%, step 10%; default 100% |
 | Vitals | Keep health visible below | 0% to 100% in 5-point steps (default 50%) |
 | Vitals | Keep stamina visible below | 0% to 100% in 5-point steps (default 20%) |
 | Vitals | Health / blood hold duration | 0 to 10 seconds in 0.5-second steps |
@@ -42,7 +46,7 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 
 Turn off **Hide enemy names** to restore enemy name labels (boss names), or **Hide enemy difficulty icons** to restore difficulty indicators for ordinary enemies and bosses. The choices are independent. Apply, then load a save. The player HUD peek keeps both choices in effect. At startup, older settings files receive any missing enemy-label options, set to On. Existing preferences and comments are preserved.
 
-Enable Show counterattack direction in Mod Settings to display the game's weak-spot attack direction at full opacity during counterattack openings, including after a perfect parry. It works with Directional Indicator disabled and ends when the game clears the opening. Other weak-spot openings use the same cue. The setting defaults to Off. Apply, then load a save. Existing settings gain this option as Off, keeping other preferences. Logging reports marker events, observed icon changes, counter cue starts, direction changes and endings in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`.
+The four Combat cues toggles work independently of the game's Directional Indicator option. Counterattack directions show the attack opening after a perfect parry; unblockable warnings show the skull; directional parry cues show the incoming direction and highlight its arrow during the parry window; the lock option shows a padlock on a hard-locked target between cues. The dot stays hidden and directions hide all center lock icons. All four toggles default to Off. Combat cue size scales the whole cue group from 10% to 200% in 10% steps, defaulting to 100%. Apply, then load a save. Existing counterattack choices are retained when adding the new controls. Logging reports the observed icon, selected arrow or warning, lock state, size and readiness failures in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`.
 
 Console commands are not used to change settings.
 
@@ -60,7 +64,7 @@ When upgrading an older Quiet Dawn package, back up `Scripts/QuietDawnConfig.lua
 
 **Visibility thresholds:** keep the health/stamina display visible while human health or vampire blood is below 50%, or stamina is below 20%, by default. Exactly the selected percentage does not trigger the threshold. Damage and stamina use can also reveal it for their hold durations, even above the thresholds. A 0% threshold disables that low-resource trigger. These rules apply when the corresponding panel opacity is 0%. Positive opacity keeps that panel shown without resource-driven hiding.
 
-Older On/Off panel settings are imported into the new opacity controls: Off becomes 0% and On becomes 100%. The upgrade adds the new keys while preserving existing settings, unknown keys and comments; it retains the original file under a `settings.ini.before-*` name for the upgrade being applied (currently `settings.ini.before-counterattack-direction`). Earlier recovery backups are retained. Compass opacity remains unchanged. Keep recovery files if an upgrade error is reported.
+Older On/Off panel settings are imported into the new opacity controls: Off becomes 0% and On becomes 100%. The upgrade adds the new keys while preserving existing settings, unknown keys and comments; it retains the original file under a `settings.ini.before-*` name for the upgrade being applied (currently `settings.ini.before-combat-cues`). Earlier recovery backups are retained. Compass opacity remains unchanged. Keep recovery files if an upgrade error is reported.
 
 Switching items/abilities briefly reveals panels set to 0%; positive opacity stays at its selected value. The switch hint remains at its own opacity, including during manual HUD peek. Set the special-attack panel to 0% to show it only while recharging; positive values show it normally at the chosen opacity. Both still respect the game's visibility restrictions. The reveal duration uses game time and pauses with the game.
 
