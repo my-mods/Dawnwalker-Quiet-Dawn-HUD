@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add Show counterattack direction to reveal the weak-spot attack direction during counterattack openings, including after a perfect parry, while ordinary directional warnings keep their configured behavior.
+
 - Keep the Toggle abilities hint hidden through its Focus-mode animation and during HUD peek, while preserving ability switching and the prompt opacity setting.
 
 - Hide Sprint and Haste running prompts by default, with a separate toggle in Mod Settings. Preserve other action prompts and support localized running labels.

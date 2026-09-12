@@ -12,6 +12,7 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 | HUD visibility | Hide sprint/haste prompt | Off, On (default On) |
 | Enemies | Hide enemy names | Off, On |
 | Enemies | Hide enemy difficulty icons | Off, On |
+| Enemies | Show counterattack direction | Off (default), On |
 | Vitals | Keep health visible below | 0% to 100% in 5-point steps (default 50%) |
 | Vitals | Keep stamina visible below | 0% to 100% in 5-point steps (default 20%) |
 | Vitals | Health / blood hold duration | 0 to 10 seconds in 0.5-second steps |
@@ -40,6 +41,8 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 | Diagnostics | Logging | Off, On |
 
 Turn off **Hide enemy names** to restore enemy name labels (boss names), or **Hide enemy difficulty icons** to restore difficulty indicators for ordinary enemies and bosses. The choices are independent. Apply, then load a save. The player HUD peek keeps both choices in effect. At startup, older settings files receive any missing enemy-label options, set to On. Existing preferences and comments are preserved.
+
+Enable Show counterattack direction in Mod Settings to display the game's weak-spot attack direction at full opacity during counterattack openings, including after a perfect parry. It works with Directional Indicator disabled and ends when the game clears the opening. Other weak-spot openings use the same cue. The setting defaults to Off. Apply, then load a save. Existing settings gain this option as Off, keeping other preferences. Logging reports counter cue starts, direction changes and endings in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`.
 
 Console commands are not used to change settings.
 

@@ -342,8 +342,9 @@ local function markerStep()
         return
     end
     -- This Blueprint property is updated by the game's directional and
-    -- non-directional display paths. Current build 25191761: 0=neutral,
+    -- non-directional display paths. Verified build 25232147: 0=neutral,
     -- 1..8=attack/parry directions, 9=unblockable, 10..13=weak spots.
+    -- Counter openings reuse the weak-spot states (including perfect parries).
     -- Preserve the entire widget whenever the actual menu option enables cues.
     -- Unknown settings fail open so an unreadable option cannot suppress them.
     local readable,icon=pcall(function() return tonumber(object["Currently Displayed Icon Type"]) end)
@@ -354,6 +355,39 @@ local function markerStep()
         -- Fixed-size plain-Lua slot selection; no object reads or traversal.
         for slot=1,64 do if not markerSlots[slot] then markerSlots[slot]=entry;break end end
         markerCount=markerCount+1
+    end
+    local counter=config.showCounterattackDirection==true and readable and icon~=nil
+        and icon>=10 and icon<=13 and icon%1==0
+    if counter then
+        -- Stock Blueprint maps these states to the player's required attack
+        -- direction, including the inverted top/bottom weak-spot mapping.
+        -- Do not enable the game's global directions option or invent a timer.
+        -- Both stock display modes draw the weak-spot arrow. Keep the current
+        -- mode so leaving the session needs no style undo. These helpers touch
+        -- only the reticle and four arrows, without callbacks or animation.
+        local middle=object["Hide Directions"]
+        if type(middle)=="boolean" then
+            local display=middle and "Display Icon State Non-Directionally" or "Display Icon State Directionally"
+            object[display](object,icon)
+            if D.debugLogging then D.count("counterRenders") end
+        end
+        if not entry.counter and not entry.hidden then entry.original=current end
+        if current~=1 then
+            opacity(object,1)
+            if D.debugLogging then D.count("markerWrites") end
+        end
+        if D.debugLogging and (not entry.counter or entry.counterIcon~=icon) then
+            D.event("counter","id=%s icon=%s full-opacity direction",tostring(job.address),tostring(icon))
+        end
+        entry.counter,entry.counterIcon,entry.hidden=true,icon,false
+        return
+    elseif entry.counter then
+        -- Restore our reveal before applying the current icon's normal rule.
+        -- A different opacity written by the game while the cue was active wins.
+        if current==1 then opacity(object,entry.original);current=entry.original
+        else entry.original=current end
+        if D.debugLogging then D.event("counter","id=%s opening ended",tostring(job.address)) end
+        entry.counter,entry.counterIcon=false,nil
     end
     -- Retain the marker even when settings are unavailable, so a later
     -- successful settings event can revisit it without global discovery.
