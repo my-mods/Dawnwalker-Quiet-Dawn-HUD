@@ -8,6 +8,7 @@ return {
     {key="healthHoldSeconds", default=4, values={0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10}},
     {key="staminaHoldSeconds", default=1.5, values={0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10}},
     {key="manualPeekSeconds", default=3, values={0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10}},
+    {key="switchRevealSeconds", default=3, values={0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10}},
     {key="manualPeek", default=1, values={0,1}},
     {key="compassOpacity", default=0, min=0, max=100, integer=false},
     {key="debugLogging", default=0, values={0,1}},

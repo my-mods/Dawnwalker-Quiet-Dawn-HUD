@@ -1,11 +1,11 @@
 -- MIT. Optional Framecore 2b adapter. Native captures contain owned scalar
 -- values and deletion-checked identities; delivery uses a UE4SS-created game-thread state.
 local M = {}
+local bindingCount=23 -- native/main.cpp: original hooks, time, cooldown and switching
 function M.attach(api, report)
     if type(api._QDNInit)~='function' then return end
     local callbacks, timer, active, logging, frameClock, lastFrame = {}, nil, false, false, nil, nil
     local paths, classes, refresh, refreshCursor, warned = {}, {}, {}, 1, {}
-    local bindingCount=20 -- native allowlist; time-change graph follows the original 19 IDs
     local originalHook=api.RegisterHook
     local function wrap(value) return {get=function() return value end} end
     local stop, schedule, drain

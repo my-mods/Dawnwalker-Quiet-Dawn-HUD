@@ -37,3 +37,5 @@ Logging uses Quiet Dawn's existing `debugLogging` setting. Session summaries inc
 ## Credits
 
 The native integration uses [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS), its UE adaptation headers, and Framecore's exported callback implementation. The build also uses fmt headers. License notices are included under `LICENSES/` in the mod repository and archive. ImGui, ImGuiColorTextEdit and Zydis/Zycore headers are required transitively by the UE4SS SDK; their implementations are not linked into this DLL.
+
+The fixed allowlist has 23 functions. Special-attack setup/finish use context-only events; the panel reads the stock cooldown display after delivery. Quickslot switching filters WBP_GameHUD graph entry 4146 before queueing; the Controls Legend filter remains entry 850. These entry offsets are verified in Steam build 25232147 assets and must be rechecked after asset changes. Keep the Lua adapter binding count synchronized with the C++ allowlist. No cooldown-update or Tick subscription is added.

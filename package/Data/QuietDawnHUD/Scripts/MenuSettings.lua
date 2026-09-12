@@ -63,7 +63,7 @@ local values, err = Store.load(directory, compatibleSchema, function()
     return result, nil, sources
 end)
 if not values and err and err:match('^Missing setting:') then
-    local defaults={hideEnemyNames=1, hideEnemyDifficultyIcons=1, opacity_WBP_HudTimer=0, timeHoldSeconds=4}
+    local defaults={hideEnemyNames=1, hideEnemyDifficultyIcons=1, opacity_WBP_HudTimer=0, timeHoldSeconds=4, switchRevealSeconds=3}
     local path=Store.path(directory)
     local text=Store.read(path)
     -- New keys avoid interpreting an old On=1 switch as 1% opacity. Require
@@ -71,7 +71,7 @@ if not values and err and err:match('^Missing setting:') then
     -- rejected without replacing the original file.
     local legacySchema={}
     for _, row in ipairs(compatibleSchema) do
-        if not row.key:match('^opacity_') and row.key~='timeHoldSeconds'
+        if not row.key:match('^opacity_') and row.key~='timeHoldSeconds' and row.key~='switchRevealSeconds'
             and not row.key:match('^hideEnemy') then legacySchema[#legacySchema+1]=row end
     end
     for _, p in ipairs(panels) do
@@ -84,11 +84,11 @@ if not values and err and err:match('^Missing setting:') then
         end
     end
     values, err = dofile(directory..'UE4SSCommonSettingsUpgrade.lua').ensure(
-        Store, path, compatibleSchema, defaults, 'time-panel')
+        Store, path, compatibleSchema, defaults, 'hud-events')
 end
 if values then
     local needsUpgrade=false
-    for _, key in ipairs({'healthHoldSeconds','staminaHoldSeconds','manualPeekSeconds','timeHoldSeconds'}) do
+    for _, key in ipairs({'healthHoldSeconds','staminaHoldSeconds','manualPeekSeconds','timeHoldSeconds','switchRevealSeconds'}) do
         if values[key]>10 or values[key]*2%1~=0 then needsUpgrade=true;break end
     end
     if needsUpgrade then values,err=Timers.ensure(Store,Store.path(directory),schema) end

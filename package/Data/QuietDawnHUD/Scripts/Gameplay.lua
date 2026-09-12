@@ -44,8 +44,9 @@ end
 if config.manualPeek==nil then config.manualPeek=true end
 if config.manualPeekSeconds==nil then config.manualPeekSeconds=3.0 end
 if config.timeHoldSeconds==nil then config.timeHoldSeconds=4.0 end
+if config.switchRevealSeconds==nil then config.switchRevealSeconds=3 end
 if type(config.manualPeek)~="boolean" then return end
-for _, key in ipairs({"healthHoldSeconds", "staminaHoldSeconds", "manualPeekSeconds", "timeHoldSeconds"}) do
+for _, key in ipairs({"healthHoldSeconds", "staminaHoldSeconds", "manualPeekSeconds", "switchRevealSeconds", "timeHoldSeconds"}) do
     local value=config[key]
     if type(value) ~= "number" or value ~= value or value < 0 or value > 10 or value*2%1 ~= 0 then
         print("[Quiet Dawn - Customizable HUD] Invalid hold duration; disabled.")
@@ -95,10 +96,13 @@ local firstFailedPeekHook
 local firstFailedTimeHook
 local timeRequested,timeDirty,timeVisible,timeUntil=false,false,false,0
 local timeJobNames={"WBP_HudTimer"}
+local firstFailedPanelHook
 local peekRequested,peekUntil,peekVisible=false,0,false
+local switchRequested,switchUntil,switchVisible=false,0,false
 local peekWidgetAddress,peekControllerAddress
 local lastPawnAddress, lastCombatAddress, lastBloodAddress, lastForm, previousHealth, previousStamina
 local previousHealthAmount
+local lastBloodCapacity
 local healthUntil, staminaUntil = 0, 0
 local panels = {}
 local absent, jobNames, fullPending, fullJob = {}, names, false, true
@@ -147,10 +151,15 @@ local function statEvent(kind, field)
             return
         end
         local new, old=tonumber(unwrap(newParam)),tonumber(unwrap(oldParam))
+        if kind=="health" and lastForm~=nil and ((lastForm==0 and field=="VampireStats")
+            or (lastForm==1 and field=="HumanStats")) then return end
         if new and old and new==old then return end
         -- Retain a drop even if a second event restores the value before the worker.
         if new and old and new<old then
-            if kind=="health" then healthDropped=true else staminaDropped=true end
+            if kind=="health" then
+                -- Tiny blood drain/regeneration cycles must not renew the hold.
+                if field~="VampireStats" or old-new>=(lastBloodCapacity or math.abs(old))*0.002 then healthDropped=true end
+            elseif kind=="stamina" then staminaDropped=true end
         end
         statsPending=true
         if D.debugLogging then D.count("resourceEvents") end
@@ -478,6 +487,30 @@ local function capture(context)
     candidate = unwrap(context)
     wake()
 end
+local SPECIAL="/Game/_Dawnwalker/UI/_Unified/HUD/AbilityCooldowns/WBP_HUD_SpecialAttackCooldown.WBP_HUD_SpecialAttackCooldown_C"
+local function currentPanelEvent(context,field)
+    local object=unwrap(context)
+    return valid(hud) and valid(controller) and sameObject(field and hud[field] or hud,object)
+        and sameObject(object:GetOwningPlayer(),controller) and sameObject(object:GetWorld(),world)
+end
+local function cooldownEvent(context)
+    if not currentPanelEvent(context,"WBP_HUD_SpecialAttackCooldown") then return end
+    -- Setup/finish update the stock Remaining Time before post delivery.
+    -- The existing panel slice reads it, including during initial acquisition.
+    fullPending=true
+    absent.WBP_HUD_SpecialAttackCooldown=nil
+    wake("cooldown")
+end
+local function switchedQuickslots(context,entryParam)
+    -- Stock Toggle AA Quickslots delegate enters the graph at 4146.
+    -- Observe that entry directly, also covering calls that bypass its stub.
+    if tonumber(unwrap(entryParam))~=4146 then return end
+    if config.switchRevealSeconds<=0 or not currentPanelEvent(context) then return end
+    local focus=hud.CombatFocusPanel
+    if valid(focus) and focus:IsActivated() then return end -- stock toggle guard
+    switchRequested,statsPending=true,true
+    wake("resource")
+end
 -- Blueprint paths verified against the stock WBP_GameHUD export table.
 -- Native paths use an explicit post-hook; Blueprint callbacks are post-hooks.
 local specs = {
@@ -521,6 +554,13 @@ if timeRevealEnabled then
     specs[#specs+1]={TIME..":ExecuteUbergraph_WBP_HudTimer",timeChanged,false,false,false,true}
 end
 local function noop() end
+if seen.WBP_HUD_SpecialAttackCooldown and (panelOpacities.WBP_HUD_SpecialAttackCooldown or 0)==0 then
+    specs[#specs+1]={SPECIAL..":SetupCooldownEffect",cooldownEvent,false,false,false,true}
+    specs[#specs+1]={SPECIAL..":OnCooldownFinished",cooldownEvent,false,false,false,true}
+end
+if config.switchRevealSeconds>0 and (seen.WBP_HUD_Quickslots or seen.WBP_AA_Quickslots) then
+    specs[#specs+1]={ROOT..":ExecuteUbergraph_WBP_GameHUD",switchedQuickslots,false,false,false,true}
+end
 local function registerOne()
     if hookIndex > #specs then return true end
     local spec = specs[hookIndex]
@@ -543,8 +583,13 @@ local function registerOne()
         statHookAttempt=statHookAttempt+1
         if statHookAttempt>=12 then
             if spec[6] then
+                if spec[1]:sub(1,#TIME)==TIME then
                 firstFailedTimeHook=firstFailedTimeHook or hookIndex
                 print("[Quiet Dawn - Customizable HUD] Time-change hook unavailable; time panel keeps its configured opacity.")
+                else
+                firstFailedPanelHook=firstFailedPanelHook or hookIndex
+                print("[Quiet Dawn - Customizable HUD] Panel event unavailable; other HUD controls remain active: "..spec[1])
+                end
             elseif spec[5] then
                 firstFailedPeekHook=firstFailedPeekHook or hookIndex
                 print("[Quiet Dawn - Customizable HUD] Manual peek input unavailable; automatic health alerts remain enabled.")
@@ -572,10 +617,12 @@ local function accept(object)
         hud, world, panels, absent = object, objectWorld, {}, {}
         lastPawnAddress, lastCombatAddress, previousHealth, previousStamina = nil, nil, nil, nil
         lastBloodAddress,lastForm=nil,nil
+        lastBloodCapacity=nil
         previousHealthAmount=nil
         healthUntil, staminaUntil = 0, 0
         peekRequested,peekUntil,peekVisible=false,0,false
         timeRequested,timeDirty,timeVisible,timeUntil=false,false,false,0
+        switchRequested,switchUntil,switchVisible=false,0,false
         statsRefresh=true
         healthDropped,staminaDropped=false,false
         if D.debugLogging then D.event("lifecycle","HUD/world changed; cached state reset") end
@@ -599,10 +646,12 @@ local function snapshot()
     local pawnAddress=pawn:GetAddress()
     if lastPawnAddress~=pawnAddress then
         previousHealth,previousStamina,previousHealthAmount=nil,nil,nil
+        lastBloodCapacity=nil
         lastCombatAddress=nil
         healthUntil,staminaUntil=0,0
         if peekVisible then fullPending,dirty=true,true end
         peekUntil,peekVisible=0,false
+        switchUntil,switchVisible=0,false
         lastPawnAddress=pawnAddress
     end
     -- Peeking only needs a current player and the game clock. It also works
@@ -613,6 +662,12 @@ local function snapshot()
         peekVisible=true
         if D.debugLogging then D.event("manualPeek","player HUD visible for %.1fs",config.manualPeekSeconds) end
     end
+    if switchRequested then
+        switchUntil=now+config.switchRevealSeconds
+        switchVisible=true
+        fullPending,dirty=true,true
+        if D.debugLogging then D.event("quickslotReveal","visible for %.1fs",config.switchRevealSeconds) end
+    end
     if #statNames==0 then return 0 end
     if statHookFailures then return nil end
     local combat = pawn.CombatComponent
@@ -621,7 +676,9 @@ local function snapshot()
     -- Form 0/1 and PlayerState.BloodBar are verified in the stock HUD.
     local form=tonumber(pawn.Form)
     local health,bloodAddress,healthAmount
+    local lossTolerance=0.000001
     if form==0 then
+        lastBloodCapacity=nil
         health=tonumber(combat:GetHealthPercentage())
         healthAmount=health
     elseif form==1 then
@@ -636,6 +693,8 @@ local function snapshot()
         -- Overdrinking can exceed the normal bar; it is not invalid health.
         health=math.min(1,amount/capacity)
         healthAmount=amount
+        lastBloodCapacity=capacity
+        lossTolerance=capacity*0.002 -- 0.2% blood jitter margin; thresholds remain exact
         bloodAddress=blood:GetAddress()
     else
         return nil -- unknown/transitional forms retain game control
@@ -657,7 +716,7 @@ local function snapshot()
         lastForm,lastBloodAddress=form,bloodAddress
         if D.debugLogging then D.event("resourceSource","form=%d source=%s",form,form==1 and "blood" or "health") end
     end
-    if healthDropped or (previousHealthAmount and healthAmount < previousHealthAmount - 0.000001) then
+    if healthDropped or (previousHealthAmount and healthAmount < previousHealthAmount - lossTolerance) then
         healthUntil = now + config.healthHoldSeconds
     end
     if staminaDropped or (previousStamina and stamina < previousStamina - 0.000001) then
@@ -722,7 +781,7 @@ local function step()
         statsPending=false
         local wasReady=stateReady
         local success,value=pcall(snapshot)
-        peekRequested=false
+        peekRequested,switchRequested=false,false
         stateReady=success and value~=nil
         if not stateReady then healthDropped,staminaDropped=false,false end
         local target=stateReady and value or 1
@@ -778,7 +837,7 @@ local function step()
             if #statNames > 0 and statsRefresh then
                 statsRefresh=false
                 local success, value = pcall(snapshot)
-                peekRequested=false
+                peekRequested,switchRequested=false,false
                 stateReady = success and value ~= nil
                 desired = stateReady and value or 1
             elseif #statNames==0 then
@@ -795,7 +854,18 @@ local function step()
             and sameObject(controller:GetWorld(),world) and sameObject(hud:GetOwningPlayer(),controller) then
             local name = jobNames[cursor]
             if absent[name] then cursor=cursor+1; return false end
-            local object = hud[name]
+            local widget = hud[name]
+            local object = widget
+            -- Use dedicated containers outside the game's widget fade tracks.
+            -- Verified stock hierarchy: hint -> one-child attachment;
+            -- WBP_SpecialAttack -> inner HorizontalBox_0.
+            if valid(widget) then
+                if name=="WBP_HUD_Quickslots_ChangePrompt" then object=widget:GetParent()
+                elseif name=="WBP_HUD_SpecialAttackCooldown" then
+                    local content=widget.WBP_SpecialAttack
+                    object=valid(content) and content:GetParent() or nil
+                end
+            end
             if valid(object) then
                 local current = object:GetRenderOpacity()
                 local entry = panels[name]
@@ -815,7 +885,15 @@ local function step()
                     target = desired == 1 and (stateReady and 1 or entry.original) or 0
                 end
                 if name=="WBP_HudTimer" and timeVisible then target=1 end
-                if peekVisible then target=1 end
+                if name=="WBP_HUD_SpecialAttackCooldown" and target==0 then
+                    local display=widget.WBP_CooldownDisplay
+                    local remaining=valid(display) and tonumber(display["Remaining Time"]) or nil
+                    if not hooks[SPECIAL..":SetupCooldownEffect"] or not hooks[SPECIAL..":OnCooldownFinished"] then
+                        target=entry.original -- unavailable events retain game control
+                    else target=remaining and remaining>0 and remaining<math.huge and 1 or 0 end
+                end
+                if switchVisible and target==0 and (name=="WBP_HUD_Quickslots" or name=="WBP_AA_Quickslots") then target=1 end
+                if peekVisible and name~="WBP_HUD_Quickslots_ChangePrompt" and name~="WBP_HUD_SpecialAttackCooldown" then target=1 end
                 if current ~= target then
                     opacity(object, target)
                     if D.debugLogging then D.count("panelWrites");D.event("panel","name=%s opacity=%.3f->%.3f",name,current,target) end
@@ -858,6 +936,10 @@ wake = function(statsOnly)
         if firstFailedTimeHook then
             hookIndex=math.min(hookIndex,firstFailedTimeHook)
             firstFailedTimeHook=nil
+        end
+        if firstFailedPanelHook then
+            hookIndex=math.min(hookIndex,firstFailedPanelHook)
+            firstFailedPanelHook=nil
         end
         if firstFailedPeekHook then
             hookIndex=math.min(hookIndex,firstFailedPeekHook)
@@ -943,13 +1025,13 @@ armExpiry = function()
     local now=valid(frameClock) and valid(controller) and frameClock:GetGameTimeInSeconds(controller) or nil
     local eligible=now and stateReady and previousHealth and previousStamina
         and previousHealth>=config.healthThreshold and previousStamina>=config.staminaThreshold
-    local remaining=now and peekVisible and math.max(0,peekUntil-now)
-        or (eligible and math.max(healthUntil,staminaUntil)-now or 0)
-    -- A completed peek still needs one callback to restore the hidden panels.
-    if peekVisible and now and remaining<=0 then remaining=0.016 end
-    if timeVisible and now then
-        local timeRemaining=math.max(0.016,timeUntil-now)
-        if remaining<=0 or timeRemaining<remaining then remaining=timeRemaining end
+    local remaining=eligible and math.max(healthUntil,staminaUntil)-now or 0
+    -- One deadline serves resource alerts, manual peek and switching.
+    for _,deadline in ipairs({peekVisible and peekUntil or false,switchVisible and switchUntil or false,timeVisible and timeUntil or false}) do
+        if deadline and now then
+            local delay=math.max(0.016,deadline-now)
+            remaining=remaining>0 and math.min(remaining,delay) or delay
+        end
     end
     if expiryPending then
         local sameOwner=expiryHUD==hudAddress and expiryController==controllerAddress and expiryPawn==lastPawnAddress
@@ -983,11 +1065,17 @@ armExpiry = function()
             fullPending=true
             if D.debugLogging then D.event("manualPeek","ended; automatic HUD visibility restored") end
         end
-        local needed=peekVisible or not stateReady or (previousHealth and previousHealth<config.healthThreshold)
+        local endedSwitch=switchVisible and now>=switchUntil
+        if endedSwitch then
+            switchVisible=false
+            fullPending=true
+            if D.debugLogging then D.event("quickslotReveal","ended") end
+        end
+        local needed=not stateReady or (previousHealth and previousHealth<config.healthThreshold)
             or (previousStamina and previousStamina<config.staminaThreshold)
-            or now<healthUntil or now<staminaUntil
+            or now<healthUntil or now<staminaUntil or peekVisible
         local target=needed and 1 or 0
-        if endedPeek or desired~=target then desired=target;wake(true)
+        if endedPeek or endedSwitch or desired~=target then desired=target;wake(true)
         elseif endedTime then wake("time")
         else armExpiry() end
     end)

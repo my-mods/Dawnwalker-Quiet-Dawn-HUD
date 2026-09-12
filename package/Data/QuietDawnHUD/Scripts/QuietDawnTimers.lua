@@ -1,7 +1,7 @@
 -- MIT. Timer choices and a preserving upgrade from the former 0-60s range.
 local M = {}
 local keys = {healthHoldSeconds=true, staminaHoldSeconds=true,
-    manualPeekSeconds=true, timeHoldSeconds=true}
+    manualPeekSeconds=true, timeHoldSeconds=true, switchRevealSeconds=true}
 function M.compatibleSchema(schema)
     local compatible = {}
     for _, row in ipairs(schema) do
