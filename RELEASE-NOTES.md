@@ -1,5 +1,7 @@
 # Quiet Dawn - Customizable HUD
 
+- Keep the Toggle abilities hint hidden through its Focus-mode animation and during HUD peek, while preserving ability switching and the prompt opacity setting.
+
 - Hide Sprint and Haste running prompts by default. A separate Mod Settings toggle restores them; other action prompts retain game behavior.
 
 Limit all HUD timers to 0–10 seconds in 0.5-second steps. Zero disables the corresponding timed reveal; keep the existing defaults and independent health/stamina thresholds.

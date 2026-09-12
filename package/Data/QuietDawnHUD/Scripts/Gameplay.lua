@@ -765,11 +765,16 @@ local function panelStep(name)
         local object = widget
         -- Use dedicated containers outside the game's widget fade tracks.
         -- Verified stock hierarchy: hint -> one-child attachment;
-        -- WBP_SpecialAttack -> inner HorizontalBox_0.
+        -- WBP_SpecialAttack -> inner HorizontalBox_0;
+        -- focus ButtonImage -> inner HorizontalBox_43 (button and label only).
         if valid(widget) then
             if name=="WBP_HUD_Quickslots_ChangePrompt" then object=widget:GetParent()
             elseif name=="WBP_HUD_SpecialAttackCooldown" then
                 local content=widget.WBP_SpecialAttack
+                object=valid(content) and content:GetParent() or nil
+            elseif name=="WBP_OpenFocusPrompt" then
+                -- Its Show animation writes the root opacity on entering Focus.
+                local content=widget.ButtonImage
                 object=valid(content) and content:GetParent() or nil
             end
         end
@@ -800,7 +805,8 @@ local function panelStep(name)
                 else target=remaining and remaining>0 and remaining<math.huge and 1 or 0 end
             end
             if switchVisible and target==0 and (name=="WBP_HUD_Quickslots" or name=="WBP_AA_Quickslots") then target=1 end
-            if peekVisible and name~="WBP_HUD_Quickslots_ChangePrompt" and name~="WBP_HUD_SpecialAttackCooldown" then target=1 end
+            if peekVisible and name~="WBP_HUD_Quickslots_ChangePrompt" and name~="WBP_HUD_SpecialAttackCooldown"
+                and name~="WBP_OpenFocusPrompt" then target=1 end
             if current ~= target then
                 opacity(object, target)
                 if D.debugLogging then D.count("panelWrites");D.event("panel","name=%s opacity=%.3f->%.3f",name,current,target) end
