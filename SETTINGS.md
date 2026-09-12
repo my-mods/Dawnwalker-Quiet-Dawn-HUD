@@ -13,12 +13,12 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 | Enemies | Hide enemy difficulty icons | Off, On |
 | Vitals | Keep health visible below | 0% to 100% in 5-point steps (default 50%) |
 | Vitals | Keep stamina visible below | 0% to 100% in 5-point steps (default 20%) |
-| Vitals | Health / blood hold duration | 0 to 60 seconds in 0.5-second steps |
-| Vitals | Stamina hold duration | 0 to 60 seconds in 0.5-second steps |
-| Vitals | Show HUD duration | 0 to 60 seconds in 0.5-second steps |
+| Vitals | Health / blood hold duration | 0 to 10 seconds in 0.5-second steps |
+| Vitals | Stamina hold duration | 0 to 10 seconds in 0.5-second steps |
+| Vitals | Show HUD duration | 0 to 10 seconds in 0.5-second steps |
 | Vitals | Show HUD on hold | Off, On |
 | HUD visibility | Time of day opacity | 0% to 100% in 5-point steps |
-| HUD visibility | Time of day reveal duration | 0 to 60 seconds in 0.5-second steps (default 4 seconds) |
+| HUD visibility | Time of day reveal duration | 0 to 10 seconds in 0.5-second steps (default 4 seconds) |
 | HUD visibility | Compass opacity | 0% to 100% in 5-point steps |
 | HUD visibility | Human health and stamina opacity | 0% to 100% in 5-point steps |
 | HUD visibility | Vampire blood and stamina opacity | 0% to 100% in 5-point steps |
@@ -50,6 +50,8 @@ When upgrading an older Quiet Dawn package, back up `Scripts/QuietDawnConfig.lua
 **Show HUD** uses the game's **Toggle Controls Legend** action. Hold **Menu (Xbox)**, **Options (PlayStation)**, or **L (keyboard)** by default. To change the controller button, edit **Toggle Controls Legend** in Controller Tweaks and Remap. For keyboard, change the game's Controls Legend binding. Quiet Dawn follows the remapped action. Show HUD duration controls the time the HUD remains visible after activation.
 
 **Logging** is the final menu setting and the only diagnostic control. Leave it Off for normal play; On writes troubleshooting details to `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`.
+
+**Timers:** all four HUD durations range from 0 to 10 seconds in 0.5-second steps. Zero disables that timed reveal. Health and stamina thresholds and positive panel opacity still apply independently. Defaults remain 4 seconds for health/blood, 1.5 seconds for stamina, 3 seconds for HUD peek and 4 seconds for time of day. Older durations above 10 seconds are capped at 10; other fractional durations round to the nearest half-second. If an existing settings file needs this adjustment, the original is kept as `settings.ini.before-short-timers`, preserving all other preferences and comments.
 
 **Visibility thresholds:** keep the health/stamina display visible while human health or vampire blood is below 50%, or stamina is below 20%, by default. Exactly the selected percentage does not trigger the threshold. Damage and stamina use can also reveal it for their hold durations, even above the thresholds. A 0% threshold disables that low-resource trigger. These rules apply when the corresponding panel opacity is 0%. Positive opacity keeps that panel shown without resource-driven hiding.
 
