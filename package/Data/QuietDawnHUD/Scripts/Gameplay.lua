@@ -100,6 +100,8 @@ local timeJobNames={"WBP_HudTimer"}
 local firstFailedPanelHook
 local peekRequested,peekUntil,peekVisible=false,0,false
 local switchRequested,switchUntil,switchVisible=false,0,false
+local switchCursor=0
+local switchJobNames={"WBP_HUD_Quickslots","WBP_AA_Quickslots"}
 local peekWidgetAddress,peekControllerAddress
 local lastPawnAddress, lastCombatAddress, lastBloodAddress, lastForm, previousHealth, previousStamina
 local previousHealthAmount
@@ -642,6 +644,7 @@ local function accept(object)
         peekRequested,peekUntil,peekVisible=false,0,false
         timeRequested,timeDirty,timeVisible,timeUntil=false,false,false,0
         switchRequested,switchUntil,switchVisible=false,0,false
+        switchCursor=0
         statsRefresh=true
         healthDropped,staminaDropped=false,false
         if D.debugLogging then D.event("lifecycle","HUD/world changed; cached state reset") end
@@ -671,6 +674,7 @@ local function snapshot()
         healthUntil,staminaUntil=0,0
         if peekVisible then fullPending,dirty=true,true end
         peekUntil,peekVisible=0,false
+        if switchVisible then switchCursor=1 end
         switchUntil,switchVisible=0,false
         lastPawnAddress=pawnAddress
     end
@@ -684,8 +688,8 @@ local function snapshot()
     end
     if switchRequested then
         switchUntil=now+config.switchRevealSeconds
+        if not switchVisible then switchCursor=1 end
         switchVisible=true
-        fullPending,dirty=true,true
         if D.debugLogging then D.event("quickslotReveal","visible for %.1fs",config.switchRevealSeconds) end
     end
     if #statNames==0 then return 0 end
@@ -751,6 +755,74 @@ local function snapshot()
     return needed and 1 or 0
 end
 snapshot=D.wrap("sample",snapshot)
+local function panelStep(name)
+    -- Revalidate ownership inside every deferred operation, including a still
+    -- valid HUD left over from the previous world.
+    if valid(hud) and valid(controller) and sameObject(hud:GetWorld(),world)
+        and sameObject(controller:GetWorld(),world) and sameObject(hud:GetOwningPlayer(),controller) then
+        if absent[name] then return true end
+        local widget = hud[name]
+        local object = widget
+        -- Use dedicated containers outside the game's widget fade tracks.
+        -- Verified stock hierarchy: hint -> one-child attachment;
+        -- WBP_SpecialAttack -> inner HorizontalBox_0.
+        if valid(widget) then
+            if name=="WBP_HUD_Quickslots_ChangePrompt" then object=widget:GetParent()
+            elseif name=="WBP_HUD_SpecialAttackCooldown" then
+                local content=widget.WBP_SpecialAttack
+                object=valid(content) and content:GetParent() or nil
+            end
+        end
+        if valid(object) then
+            local current = object:GetRenderOpacity()
+            local entry = panels[name]
+            if not entry or not sameObject(entry.object,object) then
+                entry = {object=object, original=current}
+                panels[name]=entry
+            end
+            if manualPeekEnabled and name=="WBP_ControlsLegend" then
+                peekWidgetAddress,peekControllerAddress=object:GetAddress(),controllerAddress
+            end
+            local isStats = name == "HumanStats" or name == "VampireStats"
+            local target = panelOpacities[name] or 0
+            if name=="WBP_Compass" and config.compassOpacity~=nil then target=config.compassOpacity end
+            -- Zero opacity preserves resource-driven hiding and revealing.
+            -- Missing readings retain the game's opacity.
+            if isStats and dynamicPanels[name] then
+                target = desired == 1 and (stateReady and 1 or entry.original) or 0
+            end
+            if name=="WBP_HudTimer" and timeVisible then target=1 end
+            if name=="WBP_HUD_SpecialAttackCooldown" and target==0 then
+                local display=widget.WBP_CooldownDisplay
+                local remaining=valid(display) and tonumber(display["Remaining Time"]) or nil
+                if not hooks[SPECIAL..":SetupCooldownEffect"] or not hooks[SPECIAL..":OnCooldownFinished"] then
+                    target=entry.original -- unavailable events retain game control
+                else target=remaining and remaining>0 and remaining<math.huge and 1 or 0 end
+            end
+            if switchVisible and target==0 and (name=="WBP_HUD_Quickslots" or name=="WBP_AA_Quickslots") then target=1 end
+            if peekVisible and name~="WBP_HUD_Quickslots_ChangePrompt" and name~="WBP_HUD_SpecialAttackCooldown" then target=1 end
+            if current ~= target then
+                opacity(object, target)
+                if D.debugLogging then D.count("panelWrites");D.event("panel","name=%s opacity=%.3f->%.3f",name,current,target) end
+            end
+        elseif attempts < 120 then
+            attempts=attempts+1
+            return false
+        else
+            -- Missing fields stay absent until a lifecycle/preset event.
+            -- Resource changes must not restart readiness retries.
+            absent[name]=true
+            if D.debugLogging then D.event("missing","panel=%s; retries exhausted",name) end
+        end
+    else
+        hud, world, panels = nil, nil, {}
+        hudAddress=nil
+        peekWidgetAddress,peekControllerAddress=nil,nil
+        timeRequested,timeDirty,timeVisible,timeUntil=false,false,false,0
+    end
+    return true
+end
+local timeTurn=false
 local function step()
     -- At most one hook registration OR one state snapshot OR one direct panel
     -- read/write per callback. 16 ms delay yields to a later game frame.
@@ -783,9 +855,10 @@ local function step()
         else sprintPrompts.cancel() end
         return false
     end
-    -- Continuous time interpolation must not starve panel writes or resource
-    -- alerts. Finish pending work before coalescing the next time event.
-    if timeRequested and candidate==nil and cursor==0 and not dirty and not timeDirty and not statsPending then
+    -- A short time reveal must not wait behind a full quickslot/peek pass.
+    -- Consume coalesced deadlines cheaply; only visibility changes take a
+    -- panel slice. Alternate such slices so other jobs still make progress.
+    if timeRequested and candidate==nil then
         timeRequested=false
         if valid(hud) and valid(controller) and sameObject(hud:GetWorld(),world)
             and sameObject(controller:GetWorld(),world) and sameObject(hud:GetOwningPlayer(),controller) then
@@ -794,6 +867,19 @@ local function step()
             if D.debugLogging then D.event("timeReveal","time panel visible for %.1fs",config.timeHoldSeconds) end
             armExpiry()
         end
+    end
+    timeTurn=not timeTurn
+    if timeDirty and candidate==nil and timeTurn then
+        if panelStep("WBP_HudTimer") then timeDirty=false end
+        armExpiry()
+        return false
+    end
+    -- Switching only changes these two panels. Share the priority slices
+    -- with time changes instead of waiting behind all unrelated HUD panels.
+    if switchCursor>0 and candidate==nil and timeTurn then
+        local name=switchJobNames[switchCursor]
+        if not seen[name] or panelStep(name) then switchCursor=switchCursor+1 end
+        if switchCursor>#switchJobNames then switchCursor=0 end
         return false
     end
     -- Alternate with existing work: one health child operation per frame,
@@ -829,7 +915,7 @@ local function step()
         return false
     end
     if cursor==0 and not dirty then
-        if timeRequested or markersReady() or healthReady() or promptsReady() then return false end
+        if switchCursor>0 or timeRequested or markersReady() or healthReady() or promptsReady() then return false end
         worker=false
         armExpiry()
         return true
@@ -875,76 +961,11 @@ local function step()
         return false
     end
     if cursor <= #jobNames then
-        -- Revalidate ownership inside every deferred operation, including a still
-        -- valid HUD left over from the previous world.
-        if valid(hud) and valid(controller) and sameObject(hud:GetWorld(),world)
-            and sameObject(controller:GetWorld(),world) and sameObject(hud:GetOwningPlayer(),controller) then
-            local name = jobNames[cursor]
-            if absent[name] then cursor=cursor+1; return false end
-            local widget = hud[name]
-            local object = widget
-            -- Use dedicated containers outside the game's widget fade tracks.
-            -- Verified stock hierarchy: hint -> one-child attachment;
-            -- WBP_SpecialAttack -> inner HorizontalBox_0.
-            if valid(widget) then
-                if name=="WBP_HUD_Quickslots_ChangePrompt" then object=widget:GetParent()
-                elseif name=="WBP_HUD_SpecialAttackCooldown" then
-                    local content=widget.WBP_SpecialAttack
-                    object=valid(content) and content:GetParent() or nil
-                end
-            end
-            if valid(object) then
-                local current = object:GetRenderOpacity()
-                local entry = panels[name]
-                if not entry or not sameObject(entry.object,object) then
-                    entry = {object=object, original=current}
-                    panels[name]=entry
-                end
-                if manualPeekEnabled and name=="WBP_ControlsLegend" then
-                    peekWidgetAddress,peekControllerAddress=object:GetAddress(),controllerAddress
-                end
-                local isStats = name == "HumanStats" or name == "VampireStats"
-                local target = panelOpacities[name] or 0
-                if name=="WBP_Compass" and config.compassOpacity~=nil then target=config.compassOpacity end
-                -- Zero opacity preserves resource-driven hiding and revealing.
-                -- Missing readings retain the game's opacity.
-                if isStats and dynamicPanels[name] then
-                    target = desired == 1 and (stateReady and 1 or entry.original) or 0
-                end
-                if name=="WBP_HudTimer" and timeVisible then target=1 end
-                if name=="WBP_HUD_SpecialAttackCooldown" and target==0 then
-                    local display=widget.WBP_CooldownDisplay
-                    local remaining=valid(display) and tonumber(display["Remaining Time"]) or nil
-                    if not hooks[SPECIAL..":SetupCooldownEffect"] or not hooks[SPECIAL..":OnCooldownFinished"] then
-                        target=entry.original -- unavailable events retain game control
-                    else target=remaining and remaining>0 and remaining<math.huge and 1 or 0 end
-                end
-                if switchVisible and target==0 and (name=="WBP_HUD_Quickslots" or name=="WBP_AA_Quickslots") then target=1 end
-                if peekVisible and name~="WBP_HUD_Quickslots_ChangePrompt" and name~="WBP_HUD_SpecialAttackCooldown" then target=1 end
-                if current ~= target then
-                    opacity(object, target)
-                    if D.debugLogging then D.count("panelWrites");D.event("panel","name=%s opacity=%.3f->%.3f",name,current,target) end
-                end
-            elseif attempts < 120 then
-                attempts=attempts+1
-                return false
-            else
-                -- Missing fields stay absent until a lifecycle/preset event.
-                -- Resource changes must not restart readiness retries.
-                absent[name]=true
-                if D.debugLogging then D.event("missing","panel=%s; retries exhausted",name) end
-            end
-        else
-            hud, world, panels = nil, nil, {}
-            hudAddress=nil
-            peekWidgetAddress,peekControllerAddress=nil,nil
-            timeRequested,timeDirty,timeVisible,timeUntil=false,false,false,0
-        end
-        cursor=cursor+1
+        if panelStep(jobNames[cursor]) then cursor=cursor+1 end
         return false
     end
     cursor=0
-    if dirty or statsPending or timeRequested or timeDirty or markersReady() or healthReady() or promptsReady() then return false end
+    if switchCursor>0 or dirty or statsPending or timeRequested or timeDirty or markersReady() or healthReady() or promptsReady() then return false end
     attempts=0
     worker=false
     armExpiry()
@@ -1099,7 +1120,7 @@ armExpiry = function()
         local endedSwitch=switchVisible and now>=switchUntil
         if endedSwitch then
             switchVisible=false
-            fullPending=true
+            switchCursor=1
             if D.debugLogging then D.event("quickslotReveal","ended") end
         end
         local needed=not stateReady or (previousHealth and previousHealth<config.healthThreshold)
