@@ -17,7 +17,7 @@ local allowed = {HumanStats=true, VampireStats=true, WBP_Compass=true,
     WBP_HUD_Quickslots_ChangePrompt=true, WBP_ControlsLegend=true,
     WBP_BuffContainer=true, WBP_HUD_AbilityCooldownsContainer=true,
     CombatFocusPanel=true, WBP_HUD_FocusCharge_Bar=true,
-    WBP_HUD_SpecialAttackCooldown=true, XPBar=true}
+    WBP_HUD_SpecialAttackCooldown=true, XPBar=true, WBP_HudTimer=true}
 local names, seen = {}, {}
 if type(config.panels) ~= "table" then return end
 for _, name in ipairs(config.panels) do
@@ -43,8 +43,9 @@ for _, key in ipairs({"healthThreshold", "staminaThreshold"}) do
 end
 if config.manualPeek==nil then config.manualPeek=true end
 if config.manualPeekSeconds==nil then config.manualPeekSeconds=3.0 end
+if config.timeHoldSeconds==nil then config.timeHoldSeconds=4.0 end
 if type(config.manualPeek)~="boolean" then return end
-for _, key in ipairs({"healthHoldSeconds", "staminaHoldSeconds", "manualPeekSeconds"}) do
+for _, key in ipairs({"healthHoldSeconds", "staminaHoldSeconds", "manualPeekSeconds", "timeHoldSeconds"}) do
     local value=config[key]
     if type(value) ~= "number" or value ~= value or value < 0 or value > 60 then
         print("[Quiet Dawn - Customizable HUD] Invalid hold duration; disabled.")
@@ -73,6 +74,7 @@ for _, name in ipairs(names) do
     end
 end
 local manualPeekEnabled=config.manualPeek and config.manualPeekSeconds>0 and #names>0
+local timeRevealEnabled=seen.WBP_HudTimer and (panelOpacities.WBP_HudTimer or 0)==0 and config.timeHoldSeconds>0
 if type(ExecuteInGameThreadWithDelay) ~= "function" or type(CancelDelayedAction) ~= "function" then
     print("[Quiet Dawn - Customizable HUD] Requires cancellable delayed game-thread callbacks; disabled.")
     return
@@ -90,6 +92,9 @@ local healthDropped, staminaDropped = false, false
 local statHookFailures, statHookAttempt = false, 0
 local firstFailedStatHook
 local firstFailedPeekHook
+local firstFailedTimeHook
+local timeRequested,timeDirty,timeVisible,timeUntil=false,false,false,0
+local timeJobNames={"WBP_HudTimer"}
 local peekRequested,peekUntil,peekVisible=false,0,false
 local peekWidgetAddress,peekControllerAddress
 local lastPawnAddress, lastCombatAddress, lastBloodAddress, lastForm, previousHealth, previousStamina
@@ -173,6 +178,23 @@ local function peekInput(context,entryParam)
     peekRequested,statsPending=true,true
     if D.debugLogging then D.count("manualPeekRequests") end
     wake("resource")
+end
+-- Stock time-change delegates enter this graph at 455 (build 25232147).
+-- Filter before object reads; initialization, previews and animation updates
+-- must not reveal the panel. No borrowed DayTime structs cross callbacks.
+local TIME="/Game/_Dawnwalker/UI/_Unified/HUD/Timer/WBP_HudTimer.WBP_HudTimer_C"
+local function timeChanged(context,entryParam)
+    if tonumber(unwrap(entryParam))~=455 then return end
+    local object=unwrap(context)
+    if not valid(hud) or not valid(controller) or not valid(object) or not valid(frameClock)
+        or not sameObject(hud.WBP_HudTimer,object)
+        or not sameObject(object:GetOwningPlayer(),controller) then return end
+    -- Capture the deadline with the event, so another pending HUD pass cannot
+    -- extend a reveal by delaying this panel's turn in the worker.
+    timeUntil=frameClock:GetGameTimeInSeconds(controller)+config.timeHoldSeconds
+    timeRequested=true
+    if D.debugLogging then D.count("timeChangeEvents") end
+    wake("time")
 end
 -- The game shares this widget between neutral lock-on, directions and cues.
 -- Hide neutral and directional cues when directions are disabled.
@@ -495,6 +517,9 @@ end
 if manualPeekEnabled then
     specs[#specs+1]={LEGEND..":ExecuteUbergraph_WBP_ControlsLegend",peekInput,false,false,true}
 end
+if timeRevealEnabled then
+    specs[#specs+1]={TIME..":ExecuteUbergraph_WBP_HudTimer",timeChanged,false,false,false,true}
+end
 local function noop() end
 local function registerOne()
     if hookIndex > #specs then return true end
@@ -514,10 +539,13 @@ local function registerOne()
     else
         reportHookError(spec[1], success, pre, post)
     end
-    if not (success and type(pre)=="number" and type(post)=="number") and (spec[4] or spec[5]) then
+    if not (success and type(pre)=="number" and type(post)=="number") and (spec[4] or spec[5] or spec[6]) then
         statHookAttempt=statHookAttempt+1
         if statHookAttempt>=12 then
-            if spec[5] then
+            if spec[6] then
+                firstFailedTimeHook=firstFailedTimeHook or hookIndex
+                print("[Quiet Dawn - Customizable HUD] Time-change hook unavailable; time panel keeps its configured opacity.")
+            elseif spec[5] then
                 firstFailedPeekHook=firstFailedPeekHook or hookIndex
                 print("[Quiet Dawn - Customizable HUD] Manual peek input unavailable; automatic health alerts remain enabled.")
             else
@@ -547,6 +575,7 @@ local function accept(object)
         previousHealthAmount=nil
         healthUntil, staminaUntil = 0, 0
         peekRequested,peekUntil,peekVisible=false,0,false
+        timeRequested,timeDirty,timeVisible,timeUntil=false,false,false,0
         statsRefresh=true
         healthDropped,staminaDropped=false,false
         if D.debugLogging then D.event("lifecycle","HUD/world changed; cached state reset") end
@@ -668,6 +697,19 @@ local function step()
         settingsStep()
         return false
     end
+    -- Continuous time interpolation must not starve panel writes or resource
+    -- alerts. Finish pending work before coalescing the next time event.
+    if timeRequested and candidate==nil and cursor==0 and not dirty and not timeDirty and not statsPending then
+        timeRequested=false
+        if valid(hud) and valid(controller) and sameObject(hud:GetWorld(),world)
+            and sameObject(controller:GetWorld(),world) and sameObject(hud:GetOwningPlayer(),controller) then
+            local showing=frameClock:GetGameTimeInSeconds(controller)<timeUntil
+            if timeVisible~=showing then timeVisible,timeDirty=showing,true end
+            if D.debugLogging then D.event("timeReveal","time panel visible for %.1fs",config.timeHoldSeconds) end
+            armExpiry()
+        end
+        return false
+    end
     -- Alternate with existing work: one health child operation per frame,
     -- sharing the same one-shot worker and its native frame gate.
     healthTurn=not healthTurn
@@ -694,8 +736,14 @@ local function step()
         if not success then print("[Quiet Dawn - Customizable HUD] Marker update skipped: "..tostring(reason)) end
         return false
     end
+    if cursor==0 and not dirty and timeDirty then
+        timeDirty=false
+        jobNames=timeJobNames
+        cursor=1
+        return false
+    end
     if cursor==0 and not dirty then
-        if markersReady() or healthReady() then return false end
+        if timeRequested or markersReady() or healthReady() then return false end
         worker=false
         armExpiry()
         return true
@@ -723,6 +771,7 @@ local function step()
             end
         end
         fullJob, fullPending = fullPending, false
+        if fullJob then timeDirty=false end
         jobNames = fullJob and names or statNames
         -- Resource events already supplied a fresh snapshot; only lifecycle jobs read again.
         if fullJob then
@@ -765,6 +814,7 @@ local function step()
                 if isStats and dynamicPanels[name] then
                     target = desired == 1 and (stateReady and 1 or entry.original) or 0
                 end
+                if name=="WBP_HudTimer" and timeVisible then target=1 end
                 if peekVisible then target=1 end
                 if current ~= target then
                     opacity(object, target)
@@ -783,12 +833,13 @@ local function step()
             hud, world, panels = nil, nil, {}
             hudAddress=nil
             peekWidgetAddress,peekControllerAddress=nil,nil
+            timeRequested,timeDirty,timeVisible,timeUntil=false,false,false,0
         end
         cursor=cursor+1
         return false
     end
     cursor=0
-    if dirty or statsPending or markersReady() or healthReady() then return false end
+    if dirty or statsPending or timeRequested or timeDirty or markersReady() or healthReady() then return false end
     attempts=0
     worker=false
     armExpiry()
@@ -804,6 +855,10 @@ local function repeatUntilDone(delay,fn)
 end
 wake = function(statsOnly)
     if not statsOnly then
+        if firstFailedTimeHook then
+            hookIndex=math.min(hookIndex,firstFailedTimeHook)
+            firstFailedTimeHook=nil
+        end
         if firstFailedPeekHook then
             hookIndex=math.min(hookIndex,firstFailedPeekHook)
             firstFailedPeekHook=nil
@@ -818,7 +873,7 @@ wake = function(statsOnly)
         absent={}
         settingsPending,settingsAttempts=true,0
     end
-    if statsOnly~="marker" and statsOnly~="settings" and statsOnly~="resource" and statsOnly~="enemyHealth" then dirty=true end
+    if statsOnly~="marker" and statsOnly~="settings" and statsOnly~="resource" and statsOnly~="enemyHealth" and statsOnly~="time" then dirty=true end
     if worker then if D.debugLogging then D.count("workerCoalesced") end; return end
     worker=true
     if D.debugLogging then D.count("workerStarts") end
@@ -855,6 +910,13 @@ if not subscribed then
     print("[Quiet Dawn - Customizable HUD] HUD lifecycle notification unavailable; disabled.")
     return
 end
+if seen.WBP_HudTimer then
+    local timeSubscribed=pcall(NotifyOnNewObject,TIME,function()
+        -- Construction only wakes finite readiness/rebinding; it is not time passing.
+        if hudAddress then wake() end
+    end)
+    if not timeSubscribed then print("[Quiet Dawn - Customizable HUD] Time panel lifecycle notification unavailable.") end
+end
 local markerSubscribed=pcall(NotifyOnNewObject, MARKER, function(object)
     markerSeen=true
     markerHookAttempts=0
@@ -885,6 +947,10 @@ armExpiry = function()
         or (eligible and math.max(healthUntil,staminaUntil)-now or 0)
     -- A completed peek still needs one callback to restore the hidden panels.
     if peekVisible and now and remaining<=0 then remaining=0.016 end
+    if timeVisible and now then
+        local timeRemaining=math.max(0.016,timeUntil-now)
+        if remaining<=0 or timeRemaining<remaining then remaining=timeRemaining end
+    end
     if expiryPending then
         local sameOwner=expiryHUD==hudAddress and expiryController==controllerAddress and expiryPawn==lastPawnAddress
         if remaining>0 and sameOwner and expiryDue<=now+remaining then return end
@@ -905,18 +971,24 @@ armExpiry = function()
         if not valid(hud) or not valid(controller) or not valid(frameClock)
             or not sameObject(hud:GetWorld(),world) or not sameObject(hud:GetOwningPlayer(),controller) then return end
         local now=frameClock:GetGameTimeInSeconds(controller)
-        if peekVisible and now<peekUntil then armExpiry();return end
-        local endedPeek=peekVisible
+        local endedTime=timeVisible and now>=timeUntil
+        if endedTime then
+            timeVisible=false
+            timeDirty=true
+            if D.debugLogging then D.event("timeReveal","time-change reveal ended") end
+        end
+        local endedPeek=peekVisible and now>=peekUntil
         if endedPeek then
             peekVisible=false
             fullPending=true
             if D.debugLogging then D.event("manualPeek","ended; automatic HUD visibility restored") end
         end
-        local needed=not stateReady or (previousHealth and previousHealth<config.healthThreshold)
+        local needed=peekVisible or not stateReady or (previousHealth and previousHealth<config.healthThreshold)
             or (previousStamina and previousStamina<config.staminaThreshold)
             or now<healthUntil or now<staminaUntil
         local target=needed and 1 or 0
         if endedPeek or desired~=target then desired=target;wake(true)
+        elseif endedTime then wake("time")
         else armExpiry() end
     end)
 end

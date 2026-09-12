@@ -1,5 +1,7 @@
 # Quiet Dawn - Customizable HUD
 
+Hide the time-of-day panel by default and reveal it briefly when time advances. Add its 0–100% opacity slider in 5-point steps and a configurable reveal duration defaulting to 4 seconds after the last time change. Keep time reveals, health alerts and HUD peek independent.
+
 Add opacity sliders for all 16 managed player HUD panels, from 0% to 100% in 5-point steps. Zero retains Quiet Dawn's existing automatic behavior, including health and stamina alerts; positive values keep each panel shown at the selected opacity.
 
 Add a native HUD event bridge for Framecore 2b's Performance profile. HUD hiding, resource alerts and manual peek use filtered native events, with player alerts preserved during enemy-widget bursts and event bindings refreshed after widget replacement.

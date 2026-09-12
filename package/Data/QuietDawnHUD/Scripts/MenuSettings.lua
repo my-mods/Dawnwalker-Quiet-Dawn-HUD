@@ -2,7 +2,7 @@
 local directory = assert(debug.getinfo(1,'S').source:sub(2):match('^(.*[/\\])'))
 local Store = dofile(directory .. 'SettingsStore.lua')
 local schema = dofile(directory .. 'SettingsSchema.lua')
-local panels = {"HumanStats","VampireStats","WBP_Compass","WBP_HUD_QuestInfo","WBP_HUD_Quickslots","Crosshair","WBP_AA_Quickslots","WBP_OpenFocusPrompt","WBP_HUD_Quickslots_ChangePrompt","WBP_ControlsLegend","WBP_BuffContainer","WBP_HUD_AbilityCooldownsContainer","CombatFocusPanel","WBP_HUD_FocusCharge_Bar","WBP_HUD_SpecialAttackCooldown","XPBar"}
+local panels = {"HumanStats","VampireStats","WBP_Compass","WBP_HUD_QuestInfo","WBP_HUD_Quickslots","Crosshair","WBP_AA_Quickslots","WBP_OpenFocusPrompt","WBP_HUD_Quickslots_ChangePrompt","WBP_ControlsLegend","WBP_BuffContainer","WBP_HUD_AbilityCooldownsContainer","CombatFocusPanel","WBP_HUD_FocusCharge_Bar","WBP_HUD_SpecialAttackCooldown","XPBar","WBP_HudTimer"}
 local values, err = Store.load(directory, schema, function()
     local legacyPath = directory .. 'QuietDawnConfig.lua'
     local legacy, le, lc = Store.read(legacyPath)
@@ -31,6 +31,8 @@ local values, err = Store.load(directory, schema, function()
         if not known[p] or seen[p] then return nil, 'Unknown or duplicate legacy panel' end
         seen[p]=true;if p~='WBP_Compass' then result['opacity_'..p]=0 end
     end
+    -- The time panel was not configurable in published Lua files.
+    result.opacity_WBP_HudTimer=0
     local base=os.getenv('LOCALAPPDATA')
     if not base then return nil, 'LOCALAPPDATA unavailable for legacy migration' end
     local diagnosticsPath=base..'/Dawnwalker/Saved/Config/QuietDawnHUD.ini'
@@ -58,7 +60,7 @@ local values, err = Store.load(directory, schema, function()
     return result, nil, sources
 end)
 if not values and err and err:match('^Missing setting:') then
-    local defaults={hideEnemyNames=1, hideEnemyDifficultyIcons=1}
+    local defaults={hideEnemyNames=1, hideEnemyDifficultyIcons=1, opacity_WBP_HudTimer=0, timeHoldSeconds=4}
     local path=Store.path(directory)
     local text=Store.read(path)
     -- New keys avoid interpreting an old On=1 switch as 1% opacity. Require
@@ -66,20 +68,20 @@ if not values and err and err:match('^Missing setting:') then
     -- rejected without replacing the original file.
     local legacySchema={}
     for _, row in ipairs(schema) do
-        if not row.key:match('^opacity_')
+        if not row.key:match('^opacity_') and row.key~='timeHoldSeconds'
             and not row.key:match('^hideEnemy') then legacySchema[#legacySchema+1]=row end
     end
     for _, p in ipairs(panels) do
-        if p~='WBP_Compass' then legacySchema[#legacySchema+1]={key='panel_'..p,values={0,1}} end
+        if p~='WBP_Compass' and p~='WBP_HudTimer' then legacySchema[#legacySchema+1]={key='panel_'..p,values={0,1}} end
     end
     local legacy=text and Store.parse(text,legacySchema)
     if legacy then
         for _, p in ipairs(panels) do
-            if p~='WBP_Compass' then defaults['opacity_'..p]=legacy['panel_'..p]*100 end
+            if p~='WBP_Compass' and p~='WBP_HudTimer' then defaults['opacity_'..p]=legacy['panel_'..p]*100 end
         end
     end
     values, err = dofile(directory..'UE4SSCommonSettingsUpgrade.lua').ensure(
-        Store, path, schema, defaults, 'panel-opacity')
+        Store, path, schema, defaults, 'time-panel')
 end
 if not values then print('[Quiet Dawn - Customizable HUD] Settings rejected: '..tostring(err));return {enabled=false,panels={},debugLogging=false} end
 values.enabled=values.enabled==1;values.manualPeek=values.manualPeek==1;values.debugLogging=values.debugLogging==1

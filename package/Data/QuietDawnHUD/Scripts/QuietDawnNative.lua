@@ -5,6 +5,7 @@ function M.attach(api, report)
     if type(api._QDNInit)~='function' then return end
     local callbacks, timer, active, logging, frameClock, lastFrame = {}, nil, false, false, nil, nil
     local paths, classes, refresh, refreshCursor, warned = {}, {}, {}, 1, {}
+    local bindingCount=20 -- native allowlist; time-change graph follows the original 19 IDs
     local originalHook=api.RegisterHook
     local function wrap(value) return {get=function() return value end} end
     local stop, schedule, drain
@@ -27,12 +28,12 @@ function M.attach(api, report)
             lastFrame=frame
             -- Rebind one invalid function at a time after widget replacement.
             -- A class construction burst shares a finite, coalesced retry set.
-            for offset=0,18 do
-                local id=(refreshCursor+offset-1)%19+1
+            for offset=0,bindingCount-1 do
+                local id=(refreshCursor+offset-1)%bindingCount+1
                 if refresh[id] then
                     local ready,reason=pcall(api._QDNBind,paths[id])
                     refresh[id]=not ready and refresh[id]<12 and refresh[id]+1 or nil
-                    refreshCursor=id%19+1
+                    refreshCursor=id%bindingCount+1
                     if not ready and not refresh[id] and logging and not warned[id] then
                         warned[id]=true;report('Native HUD rebind failed: '..paths[id]..': '..tostring(reason))
                     end

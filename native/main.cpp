@@ -38,8 +38,8 @@ static_assert(sizeof(CppUserModBase)==192);
 static_assert(offsetof(UnrealInitializer::Config,bHookProcessLocalScriptFunction)==0x3fa);
 static_assert(sizeof(Hook::FCallbackOptions)==72);
 
-enum class Kind { Context, Resource, Peek };
-struct Spec { const wchar_t* path; Kind kind{Kind::Context}; };
+enum class Kind { Context, Resource, Entry };
+struct Spec { const wchar_t* path; Kind kind{Kind::Context}; int entry{}; };
 #define HUD L"/Game/_Dawnwalker/UI/_Unified/HUD/WBP_GameHUD.WBP_GameHUD_C:"
 #define HUMAN L"/Game/_Dawnwalker/UI/_Unified/HUD/PlayerStatPanel/WBP_HUD_HumanStats.WBP_HUD_HumanStats_C:"
 #define VAMPIRE L"/Game/_Dawnwalker/UI/_Unified/HUD/PlayerStatPanel/WBP_HUD_VampireStats.WBP_HUD_VampireStats_C:"
@@ -49,11 +49,12 @@ constexpr std::array specs{
     Spec{HUD L"Construct"}, Spec{HUD L"BP_OnActivated"}, Spec{HUD L"On Coen Form Changed"}, Spec{HUD L"Update Shown Stat Bar"},
     Spec{HUMAN L"On HP changed",Kind::Resource}, Spec{HUMAN L"UpdateHealthBar"},
     Spec{VAMPIRE L"On HP changed",Kind::Resource}, Spec{VAMPIRE L"On Stamina changed",Kind::Resource}, Spec{VAMPIRE L"Update Blood"},
-    Spec{L"/Game/_Dawnwalker/UI/_Unified/HUD/ControlsLegend/WBP_ControlsLegend.WBP_ControlsLegend_C:ExecuteUbergraph_WBP_ControlsLegend",Kind::Peek},
+    Spec{L"/Game/_Dawnwalker/UI/_Unified/HUD/ControlsLegend/WBP_ControlsLegend.WBP_ControlsLegend_C:ExecuteUbergraph_WBP_ControlsLegend",Kind::Entry,850},
     Spec{MARKER L"Construct"}, Spec{MARKER L"EnableHardLock"}, Spec{MARKER L"NotifyIndicatorCleared"},
     Spec{MARKER L"OnObservedStubIconTypeChanged"}, Spec{MARKER L"RefreshIndicatorsVisibility"}, Spec{MARKER L"ToggleShowOnlyMiddleIndicator"},
     Spec{ENEMY L"Construct"}, Spec{ENEMY L"UpdateTarget"},
-    Spec{L"/Game/_Dawnwalker/UI/_Unified/Combat/WBP_Combat_BossBar.WBP_Combat_BossBar_C:Update Owner"}
+    Spec{L"/Game/_Dawnwalker/UI/_Unified/Combat/WBP_Combat_BossBar.WBP_Combat_BossBar_C:Update Owner"},
+    Spec{L"/Game/_Dawnwalker/UI/_Unified/HUD/Timer/WBP_HudTimer.WBP_HudTimer_C:ExecuteUbergraph_WBP_HudTimer",Kind::Entry,455}
 };
 struct Scalar { int offset{}, bytes{}; };
 struct Binding { UFunction* node{}; QuietDawn::ObjectIdentity identity; std::array<Scalar,2> params{}; };
@@ -153,12 +154,12 @@ void capture(const std::shared_ptr<State>& state, UObject* object, FFrame& stack
         const auto& binding=state->bindings[id-1];
         if (resolve(binding.identity)!=node || !object) { if (state->debug) ++state->stale; return; }
         auto kind=specs[id-1].kind;
-        Event event; event.id=id; event.priority=id<=10;
+        Event event; event.id=id; event.priority=id<=10 || kind==Kind::Entry;
         if (kind!=Kind::Context) {
             const auto locals=stack.Locals(); if (!locals) return;
-            if (kind==Kind::Peek) {
+            if (kind==Kind::Entry) {
                 int entry; std::memcpy(&entry,locals+binding.params[0].offset,4);
-                if (entry!=850) return;
+                if (entry!=specs[id-1].entry) return;
                 event.value=entry;
             } else {
                 event.resource=true;
@@ -199,15 +200,15 @@ int bind(State& state, std::string_view path) {
     if (node->HasAnyFunctionFlags(EFunctionFlags::FUNC_Native)) throw std::runtime_error("Expected a Blueprint function");
     std::array<Scalar,2> params{};
     if (specs[id].kind!=Kind::Context) {
-        size_t n=0, needed=specs[id].kind==Kind::Peek ? 1 : 2;
+        size_t n=0, needed=specs[id].kind==Kind::Entry ? 1 : 2;
         for (auto prop:TFieldRange<FProperty>(node,EFieldIterationFlags::IncludeDeprecated)) {
             if (!prop->HasAnyPropertyFlags(EPropertyFlags::CPF_Parm) || prop->HasAnyPropertyFlags(EPropertyFlags::CPF_ReturnParm)) continue;
             if (n>=needed) break;
             if (prop->HasAnyPropertyFlags(EPropertyFlags::CPF_OutParm)) throw std::runtime_error("Unexpected output parameter in HUD event");
             const auto type=prop->GetClass().GetFName().ToString();
             const int bytes=type==STR("DoubleProperty") ? 8 : type==STR("FloatProperty") ? 4 : 0;
-            if (specs[id].kind==Kind::Peek ? type!=STR("IntProperty") : !bytes) throw std::runtime_error("HUD parameter type differs from the supported signature");
-            const int offset=prop->GetOffset_Internal(), width=specs[id].kind==Kind::Peek ? 4 : bytes;
+            if (specs[id].kind==Kind::Entry ? type!=STR("IntProperty") : !bytes) throw std::runtime_error("HUD parameter type differs from the supported signature");
+            const int offset=prop->GetOffset_Internal(), width=specs[id].kind==Kind::Entry ? 4 : bytes;
             if (offset<0 || offset+width>node->GetParmsSize()) throw std::runtime_error("HUD parameter lies outside its parameter block");
             params[n++]={offset,width};
         }

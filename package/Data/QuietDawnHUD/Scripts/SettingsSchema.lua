@@ -28,5 +28,7 @@ return {
     {key="opacity_CombatFocusPanel", default=0, values={0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100}},
     {key="opacity_WBP_HUD_FocusCharge_Bar", default=0, values={0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100}},
     {key="opacity_WBP_HUD_SpecialAttackCooldown", default=0, values={0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100}},
+    {key="timeHoldSeconds", default=4, min=0, max=60, integer=false},
+    {key="opacity_WBP_HudTimer", default=0, values={0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100}},
     {key="opacity_XPBar", default=0, values={0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100}},
 }
