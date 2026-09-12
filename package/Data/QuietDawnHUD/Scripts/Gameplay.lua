@@ -90,14 +90,10 @@ local statsPending, expiryPending = false, false
 local statsRefresh=true
 local expiryHandle,expiryDue,expiryHUD,expiryController,expiryPawn
 local healthDropped, staminaDropped = false, false
-local statHookFailures, statHookAttempt = false, 0
-local firstFailedStatHook
-local firstFailedPeekHook
-local firstFailedPromptHook
-local firstFailedTimeHook
+local statHookFailures, hookAttempt = false, 0
+local failedHooks = {}
 local timeRequested,timeDirty,timeVisible,timeUntil=false,false,false,0
 local timeJobNames={"WBP_HudTimer"}
-local firstFailedPanelHook
 local peekRequested,peekUntil,peekVisible=false,0,false
 local switchRequested,switchUntil,switchVisible=false,0,false
 local switchCursor=0
@@ -473,6 +469,13 @@ local function healthStep()
         end
         return true
     end
+    local function nextField()
+        job.field=job.field+1
+        job.attempts=0
+        if job.field<=#spec.fields then return true end
+        if job.again then job.field=1;job.again=false;return true end
+        return false
+    end
     local keep=false
     local success,reason=pcall(function()
         if not valid(object) then return end
@@ -502,14 +505,17 @@ local function healthStep()
         if not sameObject(ow,world) or not sameObject(pc,controller)
             or not sameObject(controller:GetWorld(),world) then return end
         local child=object[spec.fields[job.field]]
-        if not valid(child) then keep=retry();return end
+        if not valid(child) then
+            -- A missing bar/label must not block independent children. Each
+            -- field gets finite readiness, and later target events retry it.
+            keep=retry() or nextField()
+            return
+        end
         if child:GetRenderOpacity()~=0 then
             opacity(child, 0)
             if D.debugLogging then D.count("enemyHealthWrites");D.event("enemyHealth","hidden=%s",spec.fields[job.field]) end
         end
-        job.field=job.field+1;job.attempts=0
-        keep=job.field<=#spec.fields
-        if not keep and job.again then job.field=1;job.again=false;keep=true end
+        keep=nextField()
     end)
     if not success then
         keep=retry()
@@ -567,9 +573,9 @@ end
 -- Blueprint paths verified against the stock WBP_GameHUD export table.
 -- Native paths use an explicit post-hook; Blueprint callbacks are post-hooks.
 local specs = {
-    {"/Script/DogwoodUI.HUDManagerSubsystem:PushHUDPreset", signal, true},
-    {"/Script/DogwoodUI.HUDManagerSubsystem:PopHUDPreset", signal, true},
-    {"/Script/Engine.PlayerController:ClientRestart", function(context)
+    {path="/Script/DogwoodUI.HUDManagerSubsystem:PushHUDPreset", callback=signal, native=true},
+    {path="/Script/DogwoodUI.HUDManagerSubsystem:PopHUDPreset", callback=signal, native=true},
+    {path="/Script/Engine.PlayerController:ClientRestart", callback=function(context)
         local pc = unwrap(context)
         if valid(pc) and pc:IsLocalController() then
             statsRefresh=true
@@ -577,13 +583,13 @@ local specs = {
             controllerAddress = pc:GetAddress()
             wake()
         end
-    end, true},
-    {ROOT..":Construct", capture},
-    {ROOT..":BP_OnActivated", capture},
-    {ROOT..":On Coen Form Changed", capture},
-    {ROOT..":Update Shown Stat Bar", capture},
-    {"/Script/RebelSettings.RebelGameUserSettings:SetSetting", refreshSettings, true},
-    {"/Script/RebelSettings.RebelGameUserSettings:SetSettingAsBool", refreshSettings, true},
+    end, native=true},
+    {path=ROOT..":Construct", callback=capture},
+    {path=ROOT..":BP_OnActivated", callback=capture},
+    {path=ROOT..":On Coen Form Changed", callback=capture},
+    {path=ROOT..":Update Shown Stat Bar", callback=capture},
+    {path="/Script/RebelSettings.RebelGameUserSettings:SetSetting", callback=refreshSettings, native=true},
+    {path="/Script/RebelSettings.RebelGameUserSettings:SetSettingAsBool", callback=refreshSettings, native=true},
 }
 if #statNames>0 then
     for _,entry in ipairs({
@@ -591,72 +597,70 @@ if #statNames>0 then
         {"WBP_HUD_VampireStats", "On HP changed", "health", "VampireStats"},
         {"WBP_HUD_VampireStats", "On Stamina changed", "stamina", "VampireStats"},
     }) do
-        specs[#specs+1]={STAT_ROOT..entry[1].."."..entry[1].."_C:"..entry[2],statEvent(entry[3],entry[4]),false,true}
+        specs[#specs+1]={path=STAT_ROOT..entry[1].."."..entry[1].."_C:"..entry[2],
+            callback=statEvent(entry[3],entry[4]), optional="resource"}
     end
     for _,entry in ipairs({
         {"WBP_HUD_HumanStats", "UpdateHealthBar", "HumanStats"},
         {"WBP_HUD_VampireStats", "Update Blood", "VampireStats"},
     }) do
-        specs[#specs+1]={STAT_ROOT..entry[1].."."..entry[1].."_C:"..entry[2],statUpdate(entry[3]),false,true}
+        specs[#specs+1]={path=STAT_ROOT..entry[1].."."..entry[1].."_C:"..entry[2],
+            callback=statUpdate(entry[3]), optional="resource"}
     end
 end
 if manualPeekEnabled then
-    specs[#specs+1]={LEGEND..":ExecuteUbergraph_WBP_ControlsLegend",peekInput,false,false,true}
+    specs[#specs+1]={path=LEGEND..":ExecuteUbergraph_WBP_ControlsLegend", callback=peekInput, optional="peek"}
 end
-if sprintPrompts then specs[#specs+1]={ROOT..":OnSetInputPromptEnabled",promptEvent,false,false,false,false,true} end
+if sprintPrompts then
+    specs[#specs+1]={path=ROOT..":OnSetInputPromptEnabled", callback=promptEvent, optional="prompt"}
+end
 if timeRevealEnabled then
-    specs[#specs+1]={TIME..":ExecuteUbergraph_WBP_HudTimer",timeChanged,false,false,false,true}
+    specs[#specs+1]={path=TIME..":ExecuteUbergraph_WBP_HudTimer", callback=timeChanged, optional="time"}
 end
 local function noop() end
 if seen.WBP_HUD_SpecialAttackCooldown and (panelOpacities.WBP_HUD_SpecialAttackCooldown or 0)==0 then
-    specs[#specs+1]={SPECIAL..":SetupCooldownEffect",cooldownEvent,false,false,false,true}
-    specs[#specs+1]={SPECIAL..":OnCooldownFinished",cooldownEvent,false,false,false,true}
+    specs[#specs+1]={path=SPECIAL..":SetupCooldownEffect", callback=cooldownEvent, optional="panel"}
+    specs[#specs+1]={path=SPECIAL..":OnCooldownFinished", callback=cooldownEvent, optional="panel"}
 end
 if config.switchRevealSeconds>0 and (seen.WBP_HUD_Quickslots or seen.WBP_AA_Quickslots) then
-    specs[#specs+1]={ROOT..":ExecuteUbergraph_WBP_GameHUD",switchedQuickslots,false,false,false,true}
+    specs[#specs+1]={path=ROOT..":ExecuteUbergraph_WBP_GameHUD", callback=switchedQuickslots, optional="panel"}
 end
 local function registerOne()
     if hookIndex > #specs then return true end
     local spec = specs[hookIndex]
-    if hooks[spec[1]] then hookIndex=hookIndex+1;return hookIndex>#specs end
+    if hooks[spec.path] then hookIndex=hookIndex+1;return hookIndex>#specs end
     local success, pre, post
-    if spec[3] then
-        success, pre, post = pcall(RegisterHook, spec[1], noop, spec[2])
+    if spec.native then
+        success, pre, post = pcall(RegisterHook, spec.path, noop, spec.callback)
     else
-        success, pre, post = pcall(RegisterHook, spec[1], spec[2])
+        success, pre, post = pcall(RegisterHook, spec.path, spec.callback)
     end
     if success and type(pre) == "number" and type(post) == "number" then
-        hooks[spec[1]] = {pre, post}
+        hooks[spec.path] = {pre, post}
         hookIndex = hookIndex + 1
-        statHookAttempt=0
-        if D.debugLogging then D.event("hook","registered=%s",spec[1]) end
-    else
-        reportHookError(spec[1], success, pre, post)
+        hookAttempt=0
+        if D.debugLogging then D.event("hook","registered=%s",spec.path) end
+        return hookIndex > #specs
     end
-    if not (success and type(pre)=="number" and type(post)=="number") and (spec[4] or spec[5] or spec[6] or spec[7]) then
-        statHookAttempt=statHookAttempt+1
-        if statHookAttempt>=12 then
-            if spec[6] then
-                if spec[1]:sub(1,#TIME)==TIME then
-                firstFailedTimeHook=firstFailedTimeHook or hookIndex
+    reportHookError(spec.path, success, pre, post)
+    if spec.optional then
+        hookAttempt=hookAttempt+1
+        if hookAttempt>=12 then
+            failedHooks[spec.optional]=failedHooks[spec.optional] or hookIndex
+            if spec.optional=="time" then
                 print("[Quiet Dawn - Customizable HUD] Time-change hook unavailable; time panel keeps its configured opacity.")
-                else
-                firstFailedPanelHook=firstFailedPanelHook or hookIndex
-                print("[Quiet Dawn - Customizable HUD] Panel event unavailable; other HUD controls remain active: "..spec[1])
-                end
-            elseif spec[7] then
-                firstFailedPromptHook=firstFailedPromptHook or hookIndex
+            elseif spec.optional=="panel" then
+                print("[Quiet Dawn - Customizable HUD] Panel event unavailable; other HUD controls remain active: "..spec.path)
+            elseif spec.optional=="prompt" then
                 if D.debugLogging then D.event("sprintPrompt","prompt hook unavailable; prompts left to the game") end
-            elseif spec[5] then
-                firstFailedPeekHook=firstFailedPeekHook or hookIndex
+            elseif spec.optional=="peek" then
                 print("[Quiet Dawn - Customizable HUD] Manual peek input unavailable; automatic health alerts remain enabled.")
             else
                 statHookFailures=true
-                firstFailedStatHook=firstFailedStatHook or hookIndex
-                print("[Quiet Dawn - Customizable HUD] Resource event hook unavailable; stat panels left to the game: "..spec[1])
+                print("[Quiet Dawn - Customizable HUD] Resource event hook unavailable; stat panels left to the game: "..spec.path)
             end
             hookIndex=hookIndex+1
-            statHookAttempt=0
+            hookAttempt=0
         end
     end
     return hookIndex > #specs
@@ -1048,28 +1052,12 @@ local function repeatUntilDone(delay,fn)
 end
 wake = function(statsOnly)
     if not statsOnly then
-        if firstFailedPromptHook then
-            hookIndex=math.min(hookIndex,firstFailedPromptHook)
-            firstFailedPromptHook=nil
-        end
-        if firstFailedTimeHook then
-            hookIndex=math.min(hookIndex,firstFailedTimeHook)
-            firstFailedTimeHook=nil
-        end
-        if firstFailedPanelHook then
-            hookIndex=math.min(hookIndex,firstFailedPanelHook)
-            firstFailedPanelHook=nil
-        end
-        if firstFailedPeekHook then
-            hookIndex=math.min(hookIndex,firstFailedPeekHook)
-            firstFailedPeekHook=nil
-        end
-        if firstFailedStatHook then
-            hookIndex=math.min(hookIndex,firstFailedStatHook)
-            firstFailedStatHook=nil
+        if failedHooks.resource then
             statHookFailures=false
             statsRefresh=true
         end
+        for _,index in pairs(failedHooks) do hookIndex=math.min(hookIndex,index) end
+        failedHooks={}
         fullPending=true
         absent={}
         settingsPending,settingsAttempts=true,0

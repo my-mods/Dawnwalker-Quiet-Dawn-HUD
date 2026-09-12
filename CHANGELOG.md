@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fix sprint/haste prompt event handling with the Framecore 2b native bridge.
+- Preserve meaningful blood-loss alerts when smaller fluctuations arrive in the same event burst.
+- Continue hiding available enemy-HUD elements when another child widget is unavailable.
+
 - Reveal health for meaningful healing and briefly show completed regeneration, while ignoring small regeneration ticks and repeated near-full fluctuations.
 
 - Add Show counterattack direction to reveal the weak-spot attack direction during counterattack openings, including after a perfect parry, while ordinary directional warnings keep their configured behavior.

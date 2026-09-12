@@ -44,8 +44,11 @@ public:
         for (size_t n=0; n<count; ++n) {
             auto& prior=events[(first+n)%events.size()];
             if (prior.id!=event.id || prior.index!=event.index || prior.serial!=event.serial || prior.address!=event.address) continue;
-            // A later recovery must not erase the damage/stamina-use alert.
-            if (!(prior.resource && prior.value<prior.previous) || event.value<event.previous) prior=event;
+            // Keep the largest loss until delivery. Recovery or a later tiny
+            // blood fluctuation must not erase a meaningful damage alert.
+            // Lua reads current resources separately; these scalars latch loss.
+            if (!prior.resource || prior.value>=prior.previous ||
+                event.previous-event.value>prior.previous-prior.value) prior=event;
             if (track) ++merged;
             return;
         }

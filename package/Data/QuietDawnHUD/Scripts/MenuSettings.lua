@@ -109,4 +109,5 @@ for _, p in ipairs(panels) do
     values.panelOpacities[p]=p=='WBP_Compass' and values.compassOpacity or values['opacity_'..p]/100
 end
 values.dynamicPanels={HumanStats=values.opacity_HumanStats==0,VampireStats=values.opacity_VampireStats==0}
+values.path=Store.path(directory)
 return values
