@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Clarify that Mod Setting Menu is optional, with fresh-install defaults and manual settings.ini configuration instructions.
+
 - Rename the mod to Quiet Dawn - Configurable HUD.
 
 - Add separate toggles for unblockable warnings, directional parry cues and the lock icon alongside counterattack directions. All four default to Off.

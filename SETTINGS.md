@@ -1,10 +1,37 @@
 # Settings
 
-Install [Mod Setting Menu 1.0.5 or later](https://www.nexusmods.com/thebloodofdawnwalker/mods/271) and UE4SS through Vortex. The settings file is prepared when the mod starts. Open Main Menu > Mod Settings > All Mods. Select this mod, change settings and press Apply. **Load a save after Apply.** Restore discards unapplied changes; Reset selects this mod’s defaults.
+[Mod Setting Menu 1.0.5 or later](https://www.nexusmods.com/thebloodofdawnwalker/mods/271) is optional. To use it, open Main Menu > Mod Settings > All Mods, select Quiet Dawn, change settings, press Apply, then load a save. Restore discards unapplied changes; Reset selects this mod's defaults. The mod works and can be fully configured without this menu.
+
+## Default behavior
+
+On a fresh install with no saved or imported preferences, the mod is enabled and all 17 player HUD opacities start at 0% (automatic hiding and contextual reveals). Enemy health bars, enemy names, difficulty icons, and sprint/haste prompts are hidden. All four combat cue toggles are Off; cue size is 100%. Health/blood below 50% or stamina below 20% keeps the stat panels visible. Health alerts hold for 4 seconds and stamina alerts for 1.5 seconds. Holding Controls Legend reveals the HUD for 3 seconds; switching quickslots reveals them for 3 seconds; time changes reveal the time panel for 4 seconds. Logging is Off. Existing saved or supported imported preferences take precedence over these defaults.
+
+## Manual configuration
+
+1. Install Quiet Dawn through Vortex with its required UE4SS loader, then launch the game once. Quiet Dawn creates its own `settings.ini`; you can load a save and play immediately with the defaults.
+2. Close the game and back up that generated file. Open `<game folder>/Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/settings.ini` in a text editor.
+3. Edit the existing entries under `[Settings]`, keeping every other entry and the section header. Use `1` for On and `0` for Off, percentages such as `50` (not `0.5`), and seconds such as `1.5`. Keep the exact key names and use a decimal point. Do not add duplicate keys or replace the file with the example below.
+4. Save the file, restart the game, and load a save. The next save load reads your values; settings are not polled during play.
+
+Example edits to the matching existing lines (this is not a complete settings file):
+
+```ini
+compassOpacity = 50
+opacity_Crosshair = 100
+hideSprintPrompt = 0
+hideEnemyNames = 0
+hideEnemyDifficultyIcons = 0
+showCounterattackDirection = 1
+showDirectionalParry = 1
+```
+
+This shows the compass at half opacity and the crosshair at full opacity when the game permits, restores running prompts and enemy labels/icons, and enables counterattack and parry directions. Other preferences stay as saved. Set any option back to its listed default to restore that behavior.
+
+Edit `settings.ini`, not `mod_settings.ini` (the optional menu definition), `Scripts/QuietDawnDefaults.lua` (first-use defaults), or the old import-only files. The menu and manual editing use the same settings file, so adding or removing the menu does not require converting your preferences. Keep a backup before a Vortex reinstall.
 
 The stable menu ID is `oOCamilleOo_QuietDawnHUD`. The mod generates `settings.ini` beside `mod_settings.ini` in its UE4SS mod folder. This generated file is the authoritative settings store and is not shipped in the ZIP. Existing supported preferences are imported on first use. After the new settings are saved and verified, the successfully imported legacy files are deleted if their contents are unchanged. Migration or save failures retain the originals. Cleanup failures are logged and do not prevent using the new settings. Files left by an earlier migration are not deleted automatically. Back up `settings.ini` before removing/reinstalling the mod or moving its folder. Restore that backup into the same runtime folder before launching. Do not restore an old INI over it.
 
-Missing existing settings, duplicate or invalid settings stop configuration loading and are reported in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. Preserve the file before correcting it. If a menu save fails, preserve its temporary/backup files and follow the menu’s recovery instructions. Startup prepares the menu file once, including any supported upgrade. Gameplay reads a fresh settings snapshot when a save loads. Waiting at the main menu performs no recurring settings work; travel and possession events use the current snapshot. Settings are never polled. `debugLogging` controls additional diagnostic logging; it defaults to Off.
+Missing existing settings, duplicate or invalid settings stop configuration loading and are reported in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. Preserve the file before correcting it. If a menu save fails, preserve its temporary/backup files and follow the menu’s recovery instructions. Startup prepares the settings file once, including any supported upgrade. Gameplay reads a fresh settings snapshot when a save loads. Waiting at the main menu performs no recurring settings work; travel and possession events use the current snapshot. Settings are never polled. `debugLogging` controls additional diagnostic logging; it defaults to Off.
 
 | Group | Setting | Choices or range |
 | --- | --- | --- |
@@ -16,7 +43,7 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 | Combat cues | Show unblockable warning | Off (default), On |
 | Combat cues | Show directional parry cues | Off (default), On |
 | Combat cues | Show lock icon | Off (default), On |
-| Combat cues | Combat cue size | 10%�200%, step 10%; default 100% |
+| Combat cues | Combat cue size | 10%–200%, step 10%; default 100% |
 | Vitals | Keep health visible below | 0% to 100% in 5-point steps (default 50%) |
 | Vitals | Keep stamina visible below | 0% to 100% in 5-point steps (default 20%) |
 | Vitals | Health / blood hold duration | 0 to 10 seconds in 0.5-second steps |
@@ -50,7 +77,7 @@ The four Combat cues toggles work independently of the game's Directional Indica
 
 Console commands are not used to change settings.
 
-Conditional rows and groups show relevant controls as you edit. Hidden options keep their saved values; hiding an option does not reset it. The interface uses toggles, labeled choices and sliders; the numeric representation in settings.ini is an implementation detail.
+Conditional rows and groups show relevant controls as you edit. Hidden options keep their saved values; hiding an option does not reset it. The optional interface uses toggles, labeled choices and sliders. For manual editing, use the exact numeric keys and values below.
 
 When upgrading an older Quiet Dawn package, back up `Scripts/QuietDawnConfig.lua` before Vortex replaces/removes that package. Restore the backed-up file beside the new scripts before first launch to import its panel/compass choices. If it is absent, the mod uses QuietDawnDefaults.lua. Successfully imported legacy Lua and diagnostics files are removed after the new settings are saved and verified.
 
@@ -58,7 +85,7 @@ When upgrading an older Quiet Dawn package, back up `Scripts/QuietDawnConfig.lua
 
 **Show HUD** uses the game's **Toggle Controls Legend** action. Hold **Menu (Xbox)**, **Options (PlayStation)**, or **L (keyboard)** by default. To change the controller button, edit **Toggle Controls Legend** in Controller Tweaks and Remap. For keyboard, change the game's Controls Legend binding. Quiet Dawn follows the remapped action. Show HUD duration controls the time the HUD remains visible after activation.
 
-**Logging** is the final menu setting and the only diagnostic control. Leave it Off for normal play; On writes troubleshooting details to `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`.
+**Logging** is the final optional menu setting and the only diagnostic control; manually set `debugLogging` to `0` (Off) or `1` (On). Leave it Off for normal play; On writes troubleshooting details to `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`.
 
 **Timers:** all five HUD durations range from 0 to 10 seconds in 0.5-second steps. Zero disables that timed reveal. Health and stamina thresholds and positive panel opacity still apply independently. Defaults remain 4 seconds for health/blood, 1.5 seconds for stamina, 3 seconds for HUD peek, 3 seconds for quickslot switching and 4 seconds for time of day. Older durations above 10 seconds are capped at 10; other fractional durations round to the nearest half-second. If an existing settings file needs this adjustment, the original is kept as `settings.ini.before-short-timers`, preserving all other preferences and comments.
 
@@ -77,3 +104,49 @@ Small blood fluctuations below 0.2% of bar capacity do not renew the health hold
 **Focus activation prompt opacity:** 0% keeps the Toggle abilities button and label hidden in Focus mode and during HUD peek. Positive values use the selected opacity when the game shows the prompt. Ability switching still works. Apply, then load a save.
 
 **Healing and regeneration:** Health and blood gains of at least 1% of the bar reveal the stat panel for the existing health hold duration. Smaller regeneration stays quiet until the bar reaches full. That full-bar reveal rearms only after a deficit of at least 0.2%, preventing repeated near-full notifications. Positive panel opacity and low-resource thresholds keep their existing behavior. The health / blood hold duration also controls these healing reveals; 0 disables them. Small stamina recovery does not trigger a reveal.
+
+## Manual setting reference
+
+All entries below belong under `[Settings]`. Defaults apply to a fresh install without imported preferences. Leave unlisted diagnostic tuning entries at their generated values.
+
+| Setting | INI key | Default | Supported manual values |
+| --- | --- | --- | --- |
+| Enabled | `enabled` | `1` | 0 = Off, 1 = On |
+| Hide sprint/haste prompt | `hideSprintPrompt` | `1` | 0 = Off, 1 = On |
+| Hide enemy names | `hideEnemyNames` | `1` | 0 = Off, 1 = On |
+| Hide enemy difficulty icons | `hideEnemyDifficultyIcons` | `1` | 0 = Off, 1 = On |
+| Show counterattack direction | `showCounterattackDirection` | `0` | 0 = Off, 1 = On |
+| Show unblockable warning | `showUnblockableWarning` | `0` | 0 = Off, 1 = On |
+| Show directional parry cues | `showDirectionalParry` | `0` | 0 = Off, 1 = On |
+| Show lock icon | `showLockIcon` | `0` | 0 = Off, 1 = On |
+| Combat cue size | `combatCueSize` | `100` | 10 to 200, step 10 |
+| Keep health visible below | `healthThreshold` | `50` | 0 to 100 percent; 5-point steps match the menu |
+| Keep stamina visible below | `staminaThreshold` | `20` | 0 to 100 percent; 5-point steps match the menu |
+| Health / blood hold duration | `healthHoldSeconds` | `4` | 0 to 10, step 0.5 |
+| Stamina hold duration | `staminaHoldSeconds` | `1.5` | 0 to 10, step 0.5 |
+| Show HUD duration | `manualPeekSeconds` | `3` | 0 to 10, step 0.5 |
+| Show HUD on hold | `manualPeek` | `1` | 0 = Off, 1 = On |
+| Time of day opacity | `opacity_WBP_HudTimer` | `0` | 0 to 100, step 5 |
+| Time of day reveal duration | `timeHoldSeconds` | `4` | 0 to 10, step 0.5 |
+| Compass opacity | `compassOpacity` | `0` | 0 to 100 percent; 5-point steps match the menu |
+| Human health and stamina opacity | `opacity_HumanStats` | `0` | 0 to 100, step 5 |
+| Vampire blood and stamina opacity | `opacity_VampireStats` | `0` | 0 to 100, step 5 |
+| Quest tracker opacity | `opacity_WBP_HUD_QuestInfo` | `0` | 0 to 100, step 5 |
+| Quickslots opacity | `opacity_WBP_HUD_Quickslots` | `0` | 0 to 100, step 5 |
+| Crosshair opacity | `opacity_Crosshair` | `0` | 0 to 100, step 5 |
+| Quickslot shortcuts opacity | `opacity_WBP_AA_Quickslots` | `0` | 0 to 100, step 5 |
+| Focus activation prompt opacity | `opacity_WBP_OpenFocusPrompt` | `0` | 0 to 100, step 5 |
+| Switch quickslots prompt opacity | `opacity_WBP_HUD_Quickslots_ChangePrompt` | `0` | 0 to 100, step 5 |
+| Controls legend opacity | `opacity_WBP_ControlsLegend` | `0` | 0 to 100, step 5 |
+| Active buffs opacity | `opacity_WBP_BuffContainer` | `0` | 0 to 100, step 5 |
+| Ability cooldowns opacity | `opacity_WBP_HUD_AbilityCooldownsContainer` | `0` | 0 to 100, step 5 |
+| Combat focus opacity | `opacity_CombatFocusPanel` | `0` | 0 to 100, step 5 |
+| Focus charge opacity | `opacity_WBP_HUD_FocusCharge_Bar` | `0` | 0 to 100, step 5 |
+| Special attack cooldown opacity | `opacity_WBP_HUD_SpecialAttackCooldown` | `0` | 0 to 100, step 5 |
+| Experience bar opacity | `opacity_XPBar` | `0` | 0 to 100, step 5 |
+| Show quickslots after switching | `switchRevealSeconds` | `3` | 0 to 10, step 0.5 |
+| Logging | `debugLogging` | `0` | 0 = Off, 1 = On |
+
+A panel opacity of 0 retains automatic behavior; positive opacity keeps that panel at the chosen opacity subject to game visibility rules. Timers accept 0 to 10 seconds in 0.5-second steps; 0 disables that timed reveal without disabling independent low-resource triggers. Percentages are stored on a 0 to 100 scale. Combat cue size accepts 10 to 200 in 10-point steps.
+
+If a value is malformed, duplicated, missing, or outside the supported range, the settings loader reports it in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. Correct the existing line or restore your backup, then restart and load a save.
