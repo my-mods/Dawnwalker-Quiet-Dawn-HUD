@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix duplicate HUD visibility sections by placing Hide sprint/haste prompt first with the other HUD controls.
+
 - Clarify that Mod Setting Menu is optional, with fresh-install defaults and manual settings.ini configuration instructions.
 
 - Rename the mod to Quiet Dawn - Configurable HUD.

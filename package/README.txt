@@ -14,7 +14,7 @@ For **The Blood of Dawnwalker**. Combat, drawing a weapon, lock-on, and focus no
 
 At 0% opacity, Quiet Dawn hides the general HUD between alerts and reveals. Item and ability quickslots appear briefly after using the switch control (3 seconds by default); the double-arrow switch hint stays hidden. The special-attack panel appears only while its cooldown is running. Positive panel opacity keeps the chosen value, subject to the game's visibility rules. All 17 managed panels have 0% to 100% opacity sliders in 5-point steps. Interaction prompts, dialogue, subtitles, notifications and menus retain game behavior. Manual HUD peek reveals the other managed player panels at full opacity; the Focus hint, switch hint and special-attack panel keep their own rules. Enemy health and directional indicators keep their configured behavior.
 
-The Sprint and Haste button prompts stay hidden while running. Turn off **Hide sprint/haste prompt** in the optional menu, or set `hideSprintPrompt = 0` in `settings.ini`, to restore them. Other action prompts retain game behavior, and manual HUD peek keeps running prompts hidden.
+The Sprint and Haste button prompts stay hidden while running. **Hide sprint/haste prompt** appears first in the single **HUD visibility** section. Turn off **Hide sprint/haste prompt** in the optional menu, or set `hideSprintPrompt = 0` in `settings.ini`, to restore them. Other action prompts retain game behavior, and manual HUD peek keeps running prompts hidden.
 
 The Toggle abilities hint (RT with the remapped controller layout) stays hidden in Focus mode and during manual HUD peek. Ability switching still works. Raise Focus activation prompt opacity above 0% to restore the hint.
 
@@ -22,33 +22,15 @@ Health and blood gains of at least 1% of the bar reveal the stat panel for the e
 
 The time-of-day panel is hidden by default. It appears at full opacity when time advances, then hides 4 seconds after the last time change. Time of day reveal duration adjusts from 0 to 10 seconds in 0.5-second steps; 0 disables automatic reveals. A positive Time of day opacity keeps it shown at the selected opacity. HUD peek also reveals it.
 
-## Requirements and compatibility
+## Requirements
 
 - **Optional:** [Mod Setting Menu 1.0.5 or later](https://www.nexusmods.com/thebloodofdawnwalker/mods/271) provides the in-game settings interface. Quiet Dawn works with its defaults and supports manual `settings.ini` editing without it.
 - UE4SS for BoD **Framecore 2b** with the bundled native HUD bridge, or a Dawnwalker-compatible UE4SS build with Blueprint script hooks enabled, exposing `ExecuteInGameThreadWithDelay`, `CancelDelayedAction`, `KismetSystemLibrary.GetFrameCount`, and `GetGameTimeInSeconds`. Development reference: commit `97b7e501c`.
-- Stock HUD/API reference: Steam build **25232147**, executable CL-258504.
-- Disable **HUD Tweaks and HUD Tweaks - Fixes** before enabling this mod. They are not dependencies and can compete over opacity despite having different filenames.
-- Mods altering the managed HUD panels require compatibility testing.
 
-## Install, update, and remove
+## Installation
 
-### UE4SS setup
-
-**Framecore 2b:** use its Performance profile with the bundled `dlls/main.dll`. The helper supplies Quiet Dawn's HUD events while `HookProcessInternal` and `HookProcessLocalScriptFunction` remain 0 in the INI. It does not rewrite the loader configuration. Keep the helper and Lua scripts from the same package together.
-
-If you previously installed the **Quiet Dawn - Configurable HUD - Framecore Settings** overlay, back up your loader preferences, disable that overlay in Vortex, and deploy Framecore's preferred profile. Do not run `Enable-Blueprint-Hooks.bat` when using the native bridge with the Performance profile.
-
-**Other UE4SS builds, including Vercadi:** use the regular Blueprint dispatcher. With the game closed, the optional `Enable-Blueprint-Hooks.bat` in `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/` enables `HookProcessLocalScriptFunction` in the existing INI and saves a uniquely named backup. It preserves other settings, comments and encoding; if the INI is absent, it can use the installed Framecore Performance template. Duplicate or malformed settings stop the script without edits. It never changes `HookProcessInternal`. Restart the game afterward.
-
-The native route targets Framecore 2b's specific DLL. Another DLL hash or an already-enabled script dispatcher retains Quiet Dawn's regular Lua hook route. Native build details and the supported hash are in [native build notes](https://github.com/my-mods/Dawnwalker-Quiet-Dawn-Configurable-HUD/blob/main/native/BUILD.md).
-
-1. Close the game. Disable HUD Tweaks and its Fixes submod in Vortex and deploy.
-2. Import `Quiet-Dawn-Configurable-HUD.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.
-3. Runtime files belong under `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/`. Restart the game; live Lua or DLL reload is not supported.
-
-Install **one version only**. When updating an older version, back up `Scripts/QuietDawnConfig.lua` and your personal diagnostics INI before Vortex removes or replaces the old package. To import those choices, restore the legacy Lua file beside the new scripts before first launch. The new ZIP supplies `QuietDawnDefaults.lua` and does not overwrite that legacy filename. After migration, back up the generated `settings.ini` for future reinstalls. Reinstall through Vortex’s installer when the package layout changes.
-
-To remove, close the game, disable/remove the mod in Vortex, and deploy. No save-game data is changed.
+- Vortex: Install `Quiet-Dawn-Configurable-HUD.zip` through Vortex, enable it and deploy.
+- Manual: Copy the archive's `Data/QuietDawnHUD` folder into `<game folder>/Dawnwalker/Binaries/Win64/ue4ss/Mods`, preserving the folder structure.
 
 ## Compass
 
@@ -151,7 +133,6 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 | Group | Setting | Choices or range |
 | --- | --- | --- |
 | General | Enabled | Off, On |
-| HUD visibility | Hide sprint/haste prompt | Off, On (default On) |
 | Enemies | Hide enemy names | Off, On |
 | Enemies | Hide enemy difficulty icons | Off, On |
 | Combat cues | Show counterattack direction | Off (default), On |
@@ -165,6 +146,7 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 | Vitals | Stamina hold duration | 0 to 10 seconds in 0.5-second steps |
 | Vitals | Show HUD duration | 0 to 10 seconds in 0.5-second steps |
 | Vitals | Show HUD on hold | Off, On |
+| HUD visibility | Hide sprint/haste prompt | Off, On (default On) |
 | HUD visibility | Time of day opacity | 0% to 100% in 5-point steps |
 | HUD visibility | Time of day reveal duration | 0 to 10 seconds in 0.5-second steps (default 4 seconds) |
 | HUD visibility | Show quickslots after switching | 0 to 10 seconds in 0.5-second steps (default 3; 0 disables) |
@@ -214,7 +196,7 @@ Small blood fluctuations below 0.2% of bar capacity do not renew the health hold
 
 **Time of day:** 0% opacity hides the complete time panel between time changes and HUD peeks. Time changes reveal it at 100% and restart the reveal duration, which defaults to 4 seconds. Pausing preserves the remaining duration. Set the duration to 0 seconds to disable automatic time-change reveals; HUD peek still works. Positive opacity keeps the panel shown and does not use the timer. Existing settings gain these two options without resetting other preferences.
 
-**Hide sprint/haste prompt** suppresses only the running prompts, including during manual HUD peek. Other action prompts retain game behavior. Apply, then load a save. Existing settings receive the new option set to On, with their preferences and comments preserved.
+**Hide sprint/haste prompt** is the first option in the single **HUD visibility** section. It suppresses only the running prompts, including during manual HUD peek. Other action prompts retain game behavior. Apply, then load a save. Existing settings receive the new option set to On, with their preferences and comments preserved.
 
 **Focus activation prompt opacity:** 0% keeps the Toggle abilities button and label hidden in Focus mode and during HUD peek. Positive values use the selected opacity when the game shows the prompt. Ability switching still works. Apply, then load a save.
 
@@ -227,7 +209,6 @@ All entries below belong under `[Settings]`. Defaults apply to a fresh install w
 | Setting | INI key | Default | Supported manual values |
 | --- | --- | --- | --- |
 | Enabled | `enabled` | `1` | 0 = Off, 1 = On |
-| Hide sprint/haste prompt | `hideSprintPrompt` | `1` | 0 = Off, 1 = On |
 | Hide enemy names | `hideEnemyNames` | `1` | 0 = Off, 1 = On |
 | Hide enemy difficulty icons | `hideEnemyDifficultyIcons` | `1` | 0 = Off, 1 = On |
 | Show counterattack direction | `showCounterattackDirection` | `0` | 0 = Off, 1 = On |
@@ -241,6 +222,7 @@ All entries below belong under `[Settings]`. Defaults apply to a fresh install w
 | Stamina hold duration | `staminaHoldSeconds` | `1.5` | 0 to 10, step 0.5 |
 | Show HUD duration | `manualPeekSeconds` | `3` | 0 to 10, step 0.5 |
 | Show HUD on hold | `manualPeek` | `1` | 0 = Off, 1 = On |
+| Hide sprint/haste prompt | `hideSprintPrompt` | `1` | 0 = Off, 1 = On |
 | Time of day opacity | `opacity_WBP_HudTimer` | `0` | 0 to 100, step 5 |
 | Time of day reveal duration | `timeHoldSeconds` | `4` | 0 to 10, step 0.5 |
 | Compass opacity | `compassOpacity` | `0` | 0 to 100 percent; 5-point steps match the menu |

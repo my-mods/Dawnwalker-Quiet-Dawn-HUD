@@ -36,7 +36,6 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 | Group | Setting | Choices or range |
 | --- | --- | --- |
 | General | Enabled | Off, On |
-| HUD visibility | Hide sprint/haste prompt | Off, On (default On) |
 | Enemies | Hide enemy names | Off, On |
 | Enemies | Hide enemy difficulty icons | Off, On |
 | Combat cues | Show counterattack direction | Off (default), On |
@@ -50,6 +49,7 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 | Vitals | Stamina hold duration | 0 to 10 seconds in 0.5-second steps |
 | Vitals | Show HUD duration | 0 to 10 seconds in 0.5-second steps |
 | Vitals | Show HUD on hold | Off, On |
+| HUD visibility | Hide sprint/haste prompt | Off, On (default On) |
 | HUD visibility | Time of day opacity | 0% to 100% in 5-point steps |
 | HUD visibility | Time of day reveal duration | 0 to 10 seconds in 0.5-second steps (default 4 seconds) |
 | HUD visibility | Show quickslots after switching | 0 to 10 seconds in 0.5-second steps (default 3; 0 disables) |
@@ -99,7 +99,7 @@ Small blood fluctuations below 0.2% of bar capacity do not renew the health hold
 
 **Time of day:** 0% opacity hides the complete time panel between time changes and HUD peeks. Time changes reveal it at 100% and restart the reveal duration, which defaults to 4 seconds. Pausing preserves the remaining duration. Set the duration to 0 seconds to disable automatic time-change reveals; HUD peek still works. Positive opacity keeps the panel shown and does not use the timer. Existing settings gain these two options without resetting other preferences.
 
-**Hide sprint/haste prompt** suppresses only the running prompts, including during manual HUD peek. Other action prompts retain game behavior. Apply, then load a save. Existing settings receive the new option set to On, with their preferences and comments preserved.
+**Hide sprint/haste prompt** is the first option in the single **HUD visibility** section. It suppresses only the running prompts, including during manual HUD peek. Other action prompts retain game behavior. Apply, then load a save. Existing settings receive the new option set to On, with their preferences and comments preserved.
 
 **Focus activation prompt opacity:** 0% keeps the Toggle abilities button and label hidden in Focus mode and during HUD peek. Positive values use the selected opacity when the game shows the prompt. Ability switching still works. Apply, then load a save.
 
@@ -112,7 +112,6 @@ All entries below belong under `[Settings]`. Defaults apply to a fresh install w
 | Setting | INI key | Default | Supported manual values |
 | --- | --- | --- | --- |
 | Enabled | `enabled` | `1` | 0 = Off, 1 = On |
-| Hide sprint/haste prompt | `hideSprintPrompt` | `1` | 0 = Off, 1 = On |
 | Hide enemy names | `hideEnemyNames` | `1` | 0 = Off, 1 = On |
 | Hide enemy difficulty icons | `hideEnemyDifficultyIcons` | `1` | 0 = Off, 1 = On |
 | Show counterattack direction | `showCounterattackDirection` | `0` | 0 = Off, 1 = On |
@@ -126,6 +125,7 @@ All entries below belong under `[Settings]`. Defaults apply to a fresh install w
 | Stamina hold duration | `staminaHoldSeconds` | `1.5` | 0 to 10, step 0.5 |
 | Show HUD duration | `manualPeekSeconds` | `3` | 0 to 10, step 0.5 |
 | Show HUD on hold | `manualPeek` | `1` | 0 = Off, 1 = On |
+| Hide sprint/haste prompt | `hideSprintPrompt` | `1` | 0 = Off, 1 = On |
 | Time of day opacity | `opacity_WBP_HudTimer` | `0` | 0 to 100, step 5 |
 | Time of day reveal duration | `timeHoldSeconds` | `4` | 0 to 10, step 0.5 |
 | Compass opacity | `compassOpacity` | `0` | 0 to 100 percent; 5-point steps match the menu |
