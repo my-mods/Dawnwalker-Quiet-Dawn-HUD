@@ -18,5 +18,5 @@ return {
         "WBP_HUD_Quickslots", "Crosshair", "WBP_AA_Quickslots", "WBP_OpenFocusPrompt",
         "WBP_HUD_Quickslots_ChangePrompt", "WBP_ControlsLegend", "WBP_BuffContainer",
         "WBP_HUD_AbilityCooldownsContainer", "CombatFocusPanel", "WBP_HUD_FocusCharge_Bar",
-        "WBP_HUD_SpecialAttackCooldown", "XPBar"},
+        "WBP_HUD_SpecialAttackCooldown", "XPBar", "WBP_HudTimer"},
 }

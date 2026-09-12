@@ -13,7 +13,9 @@ For **The Blood of Dawnwalker**. Combat, drawing a weapon, lock-on, and focus no
 - **Manual HUD peek:** hold the Controls Legend button (Menu on Xbox, Options on PlayStation, or L on keyboard by default) to show the player HUD for **3 seconds**. Repeat the gesture to refresh the peek. When it ends, automatic health/stamina visibility resumes.
 - **Parry/attack indicators:** normal game behavior, including difficulty restrictions. This mod never enables disabled indicators.
 
-At their default 0% opacity, the compass, quest tracker, quickslots and their change prompt, crosshair, control legend, buffs, ability cooldowns, focus panel/charge, special-attack cooldown, and XP bar stay hidden. Every managed player panel has an opacity slider from 0% to 100% in 5-point steps. Zero keeps Quiet Dawn in control; any positive value keeps the panel shown at that opacity. Health/blood and stamina retain their resource alerts at 0%. Interaction prompts, dialogue, subtitles, notifications, and menus retain their game behavior. The manual peek reveals the managed player panels at full opacity, including the compass, quests, quickslots, buffs and cooldowns. Enemy health bars and disabled directional indicators keep their configured behavior; menus, dialogue and the game's visibility restrictions remain in control.
+At their default 0% opacity, the compass, quest tracker, quickslots and their change prompt, crosshair, control legend, buffs, ability cooldowns, focus panel/charge, special-attack cooldown, and XP bar stay hidden. All 17 managed player panels have an opacity slider from 0% to 100% in 5-point steps. Zero keeps Quiet Dawn in control; any positive value keeps the panel shown at that opacity. Health/blood and stamina retain their resource alerts at 0%. Interaction prompts, dialogue, subtitles, notifications, and menus retain their game behavior. The manual peek reveals the managed player panels at full opacity, including the compass, quests, quickslots, buffs and cooldowns. Enemy health bars and disabled directional indicators keep their configured behavior; menus, dialogue and the game's visibility restrictions remain in control.
+
+The time-of-day panel is hidden by default. It appears at full opacity when time advances, then hides 4 seconds after the last time change. Time of day reveal duration adjusts from 0 to 60 seconds in 0.5-second steps; 0 disables automatic reveals. A positive Time of day opacity keeps it shown at the selected opacity. HUD peek also reveals it.
 
 ## Requirements and compatibility
 
@@ -60,7 +62,7 @@ Enable **Logging** (the final Mod Settings entry) for activation and HUD diagnos
 
 Lifecycle and preset callbacks initialize/reapply the named panels. Health, blood, and stamina change handlers, plus the stat widgets' event-driven update functions, request a coalesced read of the current player's active resource percentages. The update-function hooks also cover direct event-graph dispatch. Blood-bar capacity changes are covered by the same widget update path. There is no recurring stat sampler. The stamina handler is bound by the shared HUD's vampire stats widget during initialization in both forms. Rapid loss followed by recovery still records the loss event.
 
-A single pending hide deadline uses cached resource values and game time; it never rereads health or stamina. Further drops extend the deadline. Pausing preserves the remaining hold time: an outstanding deadline may reschedule for the remaining game-time delay. The same deadline also ends a manual HUD peek, including while health is low. It then restores normal hiding for the other panels while leaving low health visible. Once the relevant holds expire, no deadline timer continues. Panel updates run on separate frames.
+A single pending hide deadline uses cached resource values and game time; it never rereads health or stamina. Further drops extend the deadline. Pausing preserves the remaining hold time: an outstanding deadline may reschedule for the remaining game-time delay. The same deadline ends manual HUD peeks and time-change reveals independently, including while health is low. It then restores normal hiding for the other panels while leaving low health visible. Once the relevant holds expire, no deadline timer continues. Panel updates run on separate frames.
 
 Ownership checks use Unreal object addresses. Different Lua wrappers for the same object retain its cached state; old HUD/world events are ignored. Missing readings or unavailable resource hooks leave stat panels under normal game visibility when possible. Failed hook setup uses finite retries and can recover on a subsequent HUD/player lifecycle event. There is no polling fallback. Known health alerts use full opacity even if a stat panel was transparent during initialization. Form selection and the game's visibility presets remain in effect. Unknown forms or unavailable blood data leave the stat panels under game control.
 
@@ -94,6 +96,8 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 | Vitals | Stamina hold duration | 0 to 60 seconds in 0.5-second steps |
 | Vitals | Show HUD duration | 0 to 60 seconds in 0.5-second steps |
 | Vitals | Show HUD on hold | Off, On |
+| HUD visibility | Time of day opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Time of day reveal duration | 0 to 60 seconds in 0.5-second steps (default 4 seconds) |
 | HUD visibility | Compass opacity | 0% to 100% in 5-point steps |
 | HUD visibility | Human health and stamina opacity | 0% to 100% in 5-point steps |
 | HUD visibility | Vampire blood and stamina opacity | 0% to 100% in 5-point steps |
@@ -120,7 +124,7 @@ Conditional rows and groups show relevant controls as you edit. Hidden options k
 
 When upgrading an older Quiet Dawn package, back up `Scripts/QuietDawnConfig.lua` before Vortex replaces/removes that package. Restore the backed-up file beside the new scripts before first launch to import its panel/compass choices. If it is absent, the mod uses QuietDawnDefaults.lua. Successfully imported legacy Lua and diagnostics files are removed after the new settings are saved and verified.
 
-**HUD opacity:** every managed player panel has a 0% to 100% slider in 5-point steps. At 0%, Quiet Dawn keeps its existing control: health/blood and stamina appear for resource alerts, and other panels remain hidden until HUD peek. Any value above 0% keeps that panel shown at the selected opacity, including during resource alerts. The game still controls form selection and contextual visibility. HUD peek temporarily reveals all managed panels at 100%, then restores each selected opacity or automatic behavior.
+**HUD opacity:** every managed player panel has a 0% to 100% slider in 5-point steps. At 0%, Quiet Dawn keeps its existing control: health/blood and stamina appear for resource alerts, the time panel appears briefly when time advances, and other panels remain hidden until HUD peek. Any value above 0% keeps that panel shown at the selected opacity, including during resource alerts. The game still controls form selection and contextual visibility. HUD peek temporarily reveals all managed panels at 100%, then restores each selected opacity or automatic behavior.
 
 **Show HUD** uses the game's **Toggle Controls Legend** action. Hold **Menu (Xbox)**, **Options (PlayStation)**, or **L (keyboard)** by default. To change the controller button, edit **Toggle Controls Legend** in Controller Tweaks and Remap. For keyboard, change the game's Controls Legend binding. Quiet Dawn follows the remapped action. Show HUD duration controls the time the HUD remains visible after activation.
 
@@ -128,7 +132,9 @@ When upgrading an older Quiet Dawn package, back up `Scripts/QuietDawnConfig.lua
 
 **Visibility thresholds:** keep the health/stamina display visible while human health or vampire blood is below 50%, or stamina is below 20%, by default. Exactly the selected percentage does not trigger the threshold. Damage and stamina use can also reveal it for their hold durations, even above the thresholds. A 0% threshold disables that low-resource trigger. These rules apply when the corresponding panel opacity is 0%. Positive opacity keeps that panel shown without resource-driven hiding.
 
-Older On/Off panel settings are imported into the new opacity controls: Off becomes 0% and On becomes 100%. The upgrade adds the new keys while preserving existing settings, unknown keys and comments; it retains the original file as `settings.ini.before-panel-opacity`. Compass opacity remains unchanged. Keep recovery files if an upgrade error is reported.
+Older On/Off panel settings are imported into the new opacity controls: Off becomes 0% and On becomes 100%. The upgrade adds the new keys while preserving existing settings, unknown keys and comments; it retains the original file as `settings.ini.before-time-panel`. Any earlier `settings.ini.before-panel-opacity` backup is retained. Compass opacity remains unchanged. Keep recovery files if an upgrade error is reported.
+
+**Time of day:** 0% opacity hides the complete time panel between time changes and HUD peeks. Time changes reveal it at 100% and restart the reveal duration, which defaults to 4 seconds. Pausing preserves the remaining duration. Set the duration to 0 seconds to disable automatic time-change reveals; HUD peek still works. Positive opacity keeps the panel shown and does not use the timer. Existing settings gain these two options without resetting other preferences.
 
 Bundled library
 
