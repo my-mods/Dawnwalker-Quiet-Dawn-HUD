@@ -106,6 +106,8 @@ local peekWidgetAddress,peekControllerAddress
 local lastPawnAddress, lastCombatAddress, lastBloodAddress, lastForm, previousHealth, previousStamina
 local previousHealthAmount
 local lastBloodCapacity
+local fullRecoveryArmed=false
+local HEALING_REVEAL_GAIN, FULL_REARM_GAP, FULL_EPSILON=0.01,0.002,0.000001
 local healthUntil, staminaUntil = 0, 0
 local panels = {}
 local absent, jobNames, fullPending, fullJob = {}, names, false, true
@@ -674,6 +676,7 @@ local function accept(object)
         lastBloodAddress,lastForm=nil,nil
         lastBloodCapacity=nil
         previousHealthAmount=nil
+        fullRecoveryArmed=false
         healthUntil, staminaUntil = 0, 0
         peekRequested,peekUntil,peekVisible=false,0,false
         timeRequested,timeDirty,timeVisible,timeUntil=false,false,false,0
@@ -703,6 +706,7 @@ local function snapshot()
     local pawnAddress=pawn:GetAddress()
     if lastPawnAddress~=pawnAddress then
         previousHealth,previousStamina,previousHealthAmount=nil,nil,nil
+        fullRecoveryArmed=false
         lastBloodCapacity=nil
         lastCombatAddress=nil
         healthUntil,staminaUntil=0,0
@@ -735,6 +739,7 @@ local function snapshot()
     local form=tonumber(pawn.Form)
     local health,bloodAddress,healthAmount
     local lossTolerance=0.000001
+    local healingScale=1
     if form==0 then
         lastBloodCapacity=nil
         health=tonumber(combat:GetHealthPercentage())
@@ -751,7 +756,13 @@ local function snapshot()
         -- Overdrinking can exceed the normal bar; it is not invalid health.
         health=math.min(1,amount/capacity)
         healthAmount=amount
+        -- A capacity change is a new baseline, not healing or completion.
+        if lastBloodCapacity and lastBloodCapacity~=capacity then
+            previousHealthAmount=nil
+            fullRecoveryArmed=false
+        end
         lastBloodCapacity=capacity
+        healingScale=capacity
         lossTolerance=capacity*0.002 -- 0.2% blood jitter margin; thresholds remain exact
         bloodAddress=blood:GetAddress()
     else
@@ -764,18 +775,34 @@ local function snapshot()
     if lastCombatAddress~=combatAddress then
         previousHealth, previousStamina = nil, nil
         previousHealthAmount=nil
+        fullRecoveryArmed=false
         healthUntil, staminaUntil = 0, 0
         lastCombatAddress = combatAddress
     end
     if lastForm~=form or lastBloodAddress~=bloodAddress then
         previousHealth=nil
         previousHealthAmount=nil
+        fullRecoveryArmed=false
         healthUntil=0
         lastForm,lastBloodAddress=form,bloodAddress
         if D.debugLogging then D.event("resourceSource","form=%d source=%s",form,form==1 and "blood" or "health") end
     end
-    if healthDropped or (previousHealthAmount and healthAmount < previousHealthAmount - lossTolerance) then
+    -- The same resource events report losses and gains. Use the current
+    -- resource snapshot: human events carry HP units, blood events carry blood.
+    -- Small regeneration does not renew the hold; completing a recovery does.
+    local gain=previousHealthAmount and healthAmount-previousHealthAmount or 0
+    local healed=gain>0 and gain+healingScale*FULL_EPSILON>=healingScale*HEALING_REVEAL_GAIN
+    local reachedFull=fullRecoveryArmed and health>=1-FULL_EPSILON
+    if health<=1-FULL_REARM_GAP then fullRecoveryArmed=true
+    elseif health>=1-FULL_EPSILON then fullRecoveryArmed=false end
+    if healthDropped or (previousHealthAmount and healthAmount < previousHealthAmount - lossTolerance)
+        or healed or reachedFull then
         healthUntil = now + config.healthHoldSeconds
+        if D.debugLogging and (healed or reachedFull) then
+            D.count(reachedFull and "fullRecoveryReveals" or "healingReveals")
+            D.event("healthReveal","reason=%s gain=%.4f hold=%.1fs",
+                reachedFull and "full" or "healing",gain/healingScale,config.healthHoldSeconds)
+        end
     end
     if staminaDropped or (previousStamina and stamina < previousStamina - 0.000001) then
         staminaUntil = now + config.staminaHoldSeconds
