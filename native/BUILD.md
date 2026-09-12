@@ -12,7 +12,7 @@ cmake -S native -B .local/native-build -A x64 -DUE4SS_SDK=C:/path/to/RE-UE4SS
 cmake --build .local/native-build --config Release
 ```
 
-Run the CMake commands from the Quiet Dawn repository. CMake retrieves pinned public header dependencies. The output is `.local/native-build/Release/main.dll` with the Visual Studio generator, or `.local/native-build/main.dll` with Ninja. The package payload is `Data/QuietDawnHUD/dlls/main.dll`. Install the packaged mod through Vortex.
+Run the CMake commands from the Quiet Dawn - Configurable HUD repository. CMake retrieves pinned public header dependencies. The output is `.local/native-build/Release/main.dll` with the Visual Studio generator, or `.local/native-build/main.dll` with Ninja. The package payload is `Data/QuietDawnHUD/dlls/main.dll`. Install the packaged mod through Vortex.
 
 ## Compatibility boundary
 

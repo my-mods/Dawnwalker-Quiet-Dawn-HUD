@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Rename the mod to Quiet Dawn - Configurable HUD.
+
 - Add separate toggles for unblockable warnings, directional parry cues and the lock icon alongside counterattack directions. All four default to Off.
 - Hide the center dot and suppress center lock icons while showing directions.
 - Add a common combat cue size slider from 10% to 200% in 10% steps, defaulting to 100%.

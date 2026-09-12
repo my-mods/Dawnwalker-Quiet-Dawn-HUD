@@ -1,4 +1,4 @@
--- Quiet Dawn - Customizable HUD. MIT.
+-- Quiet Dawn - Configurable HUD. MIT.
 -- Build 25232147: sprint abilities use these ST_InputNames keys. Match the
 -- text identity, never the translated label or a button shared with another action.
 local M = {}

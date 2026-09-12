@@ -1,4 +1,4 @@
-// Quiet Dawn - Customizable HUD. MIT.
+// Quiet Dawn - Configurable HUD. MIT.
 #pragma once
 #include <array>
 #include <cstdint>

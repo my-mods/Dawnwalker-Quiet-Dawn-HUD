@@ -1,7 +1,7 @@
 OPTIONAL SHOW COMPASS VERSION
 Complete alternative; install only one version.
 
-# Quiet Dawn - Customizable HUD
+# Quiet Dawn - Configurable HUD
 
 A quiet view of the world, with health and stamina returning when needed.
 
@@ -26,7 +26,7 @@ The compass, quest tracker, quickslots and their change prompt, crosshair, contr
 ## Install, update, and remove
 
 1. Close the game. Disable HUD Tweaks and its Fixes submod in Vortex and deploy.
-2. Import `Quiet-Dawn-Customizable-HUD.zip` or the optional `Quiet-Dawn-Customizable-HUD-Show-Compass.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.
+2. Import `Quiet-Dawn-Configurable-HUD.zip` or the optional `Quiet-Dawn-Configurable-HUD-Show-Compass.zip`. Choose **UE4SS (Lua mods)**, enable, and deploy.
 3. Runtime files belong under `Dawnwalker/Binaries/Win64/ue4ss/Mods/QuietDawnHUD/`. Restart the game; live Lua reload is not supported.
 
 Install **one version only**. Both archives use the same internal ID and runtime paths. Back up configuration before replacing your existing Vortex entry: the shipped configuration is a full replacement, not an automatic merge. To switch variants, disable/remove the old entry and deploy before importing and enabling the other archive. If the installer selected an incorrect layout, reinstall through the installer; redeployment alone preserves it.
@@ -35,7 +35,7 @@ To remove, close the game, disable/remove the mod in Vortex, and deploy. No save
 
 ## Optional Show Compass version
 
-`Quiet-Dawn-Customizable-HUD-Show-Compass.zip` is a complete alternative. It displays the compass at 50% opacity; the game may still hide it in dialogue or other special states. Health/stamina timing and all other settings are identical to the standard version.
+`Quiet-Dawn-Configurable-HUD-Show-Compass.zip` is a complete alternative. It displays the compass at 50% opacity; the game may still hide it in dialogue or other special states. Health/stamina timing and all other settings are identical to the standard version.
 
 ## Configuration
 
@@ -51,7 +51,7 @@ Edit `Scripts/QuietDawnConfig.lua` through your normal mod configuration workflo
 
 Copy `QuietDawnHUD.ini.example` to `%LOCALAPPDATA%/Dawnwalker/Saved/Config/QuietDawnHUD.ini`. Set `[Debug] debugLogging=true` to activate logging, or `debugLogging=false` to disable it, then restart the game. This personal file survives mod updates; the archive defaults to logging off.
 
-Messages use `[Quiet Dawn - Customizable HUD][DEBUG]` in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. They report HUD visibility transitions, panel/marker writes, hook setup, active HP/blood source, received/rejected resource callbacks, unavailable state, and timing/counter summaries on activity. `SummarySeconds=10`, `SlowCallbackMs=2`, and `MaxEventsPerSecond=6` control summary frequency, slow-phase reporting, and the event output limit. Suppressed events are counted. The INI is read once; logging adds no timer or object searches. Disabled diagnostics retain the original work functions without timing wrappers.
+Messages use `[Quiet Dawn - Configurable HUD][DEBUG]` in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. They report HUD visibility transitions, panel/marker writes, hook setup, active HP/blood source, received/rejected resource callbacks, unavailable state, and timing/counter summaries on activity. `SummarySeconds=10`, `SlowCallbackMs=2`, and `MaxEventsPerSecond=6` control summary frequency, slow-phase reporting, and the event output limit. Suppressed events are counted. The INI is read once; logging adds no timer or object searches. Disabled diagnostics retain the original work functions without timing wrappers.
 
 Timings use `os.clock` for Lua work phases, including their synchronous native calls. Nested phases overlap: do not sum them. These measurements are not engine frame times or proof of a stutter fix. Resource-event gaps use game time. For diagnosis, reproduce damage, stamina use, lock-on/cues and a save load, then inspect the log before launching another session.
 

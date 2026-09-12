@@ -1,5 +1,5 @@
 -- Optional Show Compass: 50 percent opacity; game visibility rules still apply.
--- Quiet Dawn - Customizable HUD
+-- Quiet Dawn - Configurable HUD
 -- Read once at startup. Restart the game after editing.
 return {
     enabled = true,

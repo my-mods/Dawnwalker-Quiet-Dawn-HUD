@@ -1,4 +1,4 @@
-// Quiet Dawn - Customizable HUD. MIT.
+// Quiet Dawn - Configurable HUD. MIT.
 // SDK: RE-UE4SS 97b7e501c / UEPseudo eb40a05f. Framecore 2b only.
 #include <Mod/CppUserModBase.hpp>
 #include <Mod/LuaMod.hpp>

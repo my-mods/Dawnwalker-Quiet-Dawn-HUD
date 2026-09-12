@@ -95,7 +95,7 @@ if values then
     end
     if needsUpgrade then values,err=Timers.ensure(Store,Store.path(directory),schema) end
 end
-if not values then print('[Quiet Dawn - Customizable HUD] Settings rejected: '..tostring(err));return {enabled=false,panels={},debugLogging=false} end
+if not values then print('[Quiet Dawn - Configurable HUD] Settings rejected: '..tostring(err));return {enabled=false,panels={},debugLogging=false} end
 values.enabled=values.enabled==1;values.manualPeek=values.manualPeek==1;values.debugLogging=values.debugLogging==1
 values.hideEnemyNames=values.hideEnemyNames==1
 values.hideEnemyDifficultyIcons=values.hideEnemyDifficultyIcons==1
