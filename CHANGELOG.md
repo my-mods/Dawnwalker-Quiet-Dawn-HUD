@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reveal health for meaningful healing and briefly show completed regeneration, while ignoring small regeneration ticks and repeated near-full fluctuations.
+
 - Add Show counterattack direction to reveal the weak-spot attack direction during counterattack openings, including after a perfect parry, while ordinary directional warnings keep their configured behavior.
 
 - Keep the Toggle abilities hint hidden through its Focus-mode animation and during HUD peek, while preserving ability switching and the prompt opacity setting.
