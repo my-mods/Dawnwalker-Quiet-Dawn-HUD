@@ -25,11 +25,11 @@ local values, err = Store.load(directory, schema, function()
     for _, key in ipairs({'healthThreshold','staminaThreshold','compassOpacity'}) do
         if result[key]~=nil then result[key]=result[key]*100 end
     end
-    local known = {};for _, p in ipairs(panels) do known[p]=true;if p~='WBP_Compass' then result['panel_'..p]=1 end end
+    local known = {};for _, p in ipairs(panels) do known[p]=true;if p~='WBP_Compass' then result['opacity_'..p]=100 end end
     local seen = {}
     for _, p in ipairs(cfg.panels) do
         if not known[p] or seen[p] then return nil, 'Unknown or duplicate legacy panel' end
-        seen[p]=true;if p~='WBP_Compass' then result['panel_'..p]=0 end
+        seen[p]=true;if p~='WBP_Compass' then result['opacity_'..p]=0 end
     end
     local base=os.getenv('LOCALAPPDATA')
     if not base then return nil, 'LOCALAPPDATA unavailable for legacy migration' end
@@ -57,12 +57,29 @@ local values, err = Store.load(directory, schema, function()
     result.debugLogging=canonical or legacy or 0
     return result, nil, sources
 end)
-if not values and err and err:match('^Missing setting: hideEnemy') then
-    -- The menu requires physical keys, not just in-memory fallback values.
-    -- Prepare at startup and recheck on save load, preserving all existing text.
+if not values and err and err:match('^Missing setting:') then
+    local defaults={hideEnemyNames=1, hideEnemyDifficultyIcons=1}
+    local path=Store.path(directory)
+    local text=Store.read(path)
+    -- New keys avoid interpreting an old On=1 switch as 1% opacity. Require
+    -- all old panel switches before deriving preferences; malformed input is
+    -- rejected without replacing the original file.
+    local legacySchema={}
+    for _, row in ipairs(schema) do
+        if not row.key:match('^opacity_')
+            and not row.key:match('^hideEnemy') then legacySchema[#legacySchema+1]=row end
+    end
+    for _, p in ipairs(panels) do
+        if p~='WBP_Compass' then legacySchema[#legacySchema+1]={key='panel_'..p,values={0,1}} end
+    end
+    local legacy=text and Store.parse(text,legacySchema)
+    if legacy then
+        for _, p in ipairs(panels) do
+            if p~='WBP_Compass' then defaults['opacity_'..p]=legacy['panel_'..p]*100 end
+        end
+    end
     values, err = dofile(directory..'UE4SSCommonSettingsUpgrade.lua').ensure(
-        Store, Store.path(directory), schema,
-        {hideEnemyNames=1, hideEnemyDifficultyIcons=1}, 'enemy-labels')
+        Store, path, schema, defaults, 'panel-opacity')
 end
 if not values then print('[Quiet Dawn - Customizable HUD] Settings rejected: '..tostring(err));return {enabled=false,panels={},debugLogging=false} end
 values.enabled=values.enabled==1;values.manualPeek=values.manualPeek==1;values.debugLogging=values.debugLogging==1
@@ -70,6 +87,12 @@ values.hideEnemyNames=values.hideEnemyNames==1
 values.hideEnemyDifficultyIcons=values.hideEnemyDifficultyIcons==1
 -- Menu percentages become fractions only at the gameplay boundary.
 for _, key in ipairs({'healthThreshold','staminaThreshold','compassOpacity'}) do values[key]=values[key]/100 end
--- Visibility switches use 1 = shown and 0 = hidden; compass uses opacity alone.
-values.panels={};for _, p in ipairs(panels) do if p=='WBP_Compass' or values['panel_'..p]==0 then values.panels[#values.panels+1]=p end end
+-- All named panels have opacity controls. Zero preserves Quiet Dawn
+-- management; positive values keep a fixed opacity. The game's form/preset visibility restrictions remain intact.
+values.panels=panels
+values.panelOpacities={}
+for _, p in ipairs(panels) do
+    values.panelOpacities[p]=p=='WBP_Compass' and values.compassOpacity or values['opacity_'..p]/100
+end
+values.dynamicPanels={HumanStats=values.opacity_HumanStats==0,VampireStats=values.opacity_VampireStats==0}
 return values

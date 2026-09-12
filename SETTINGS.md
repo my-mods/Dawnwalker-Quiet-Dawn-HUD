@@ -18,24 +18,24 @@ Missing existing settings, duplicate or invalid settings stop configuration load
 | Vitals | Show HUD duration | 0 to 60 seconds in 0.5-second steps |
 | Vitals | Show HUD on hold | Off, On |
 | HUD visibility | Compass opacity | 0% to 100% in 5-point steps |
-| HUD visibility | Human health and stamina | Off, On |
-| HUD visibility | Vampire blood and stamina | Off, On |
-| HUD visibility | Quest tracker | Off, On |
-| HUD visibility | Quickslots | Off, On |
-| HUD visibility | Crosshair | Off, On |
-| HUD visibility | Quickslot shortcuts | Off, On |
-| HUD visibility | Focus activation prompt | Off, On |
-| HUD visibility | Switch quickslots prompt | Off, On |
-| HUD visibility | Controls legend | Off, On |
-| HUD visibility | Active buffs | Off, On |
-| HUD visibility | Ability cooldowns | Off, On |
-| HUD visibility | Combat focus | Off, On |
-| HUD visibility | Focus charge | Off, On |
-| HUD visibility | Special attack cooldown | Off, On |
-| HUD visibility | Experience bar | Off, On |
+| HUD visibility | Human health and stamina opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Vampire blood and stamina opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Quest tracker opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Quickslots opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Crosshair opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Quickslot shortcuts opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Focus activation prompt opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Switch quickslots prompt opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Controls legend opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Active buffs opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Ability cooldowns opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Combat focus opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Focus charge opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Special attack cooldown opacity | 0% to 100% in 5-point steps |
+| HUD visibility | Experience bar opacity | 0% to 100% in 5-point steps |
 | Diagnostics | Logging | Off, On |
 
-Turn off **Hide enemy names** to restore enemy name labels (boss names), or **Hide enemy difficulty icons** to restore difficulty indicators for ordinary enemies and bosses. The choices are independent. Apply, then load a save. The player HUD peek keeps both choices in effect. At startup, older settings files receive only the missing new options, set to On, so the menu can edit them. Existing preferences and comments are preserved; the original file is retained as `settings.ini.before-enemy-labels`. Keep recovery files if an upgrade error is reported.
+Turn off **Hide enemy names** to restore enemy name labels (boss names), or **Hide enemy difficulty icons** to restore difficulty indicators for ordinary enemies and bosses. The choices are independent. Apply, then load a save. The player HUD peek keeps both choices in effect. At startup, older settings files receive any missing enemy-label options, set to On. Existing preferences and comments are preserved.
 
 Console commands are not used to change settings.
 
@@ -43,12 +43,12 @@ Conditional rows and groups show relevant controls as you edit. Hidden options k
 
 When upgrading an older Quiet Dawn package, back up `Scripts/QuietDawnConfig.lua` before Vortex replaces/removes that package. Restore the backed-up file beside the new scripts before first launch to import its panel/compass choices. If it is absent, the mod uses QuietDawnDefaults.lua. Successfully imported legacy Lua and diagnostics files are removed after the new settings are saved and verified.
 
-**HUD visibility:** On keeps the element visible under the game's normal rules. Off hides it between alerts or HUD peeks. The switches store On as 1 and Off as 0. Compass opacity is the only compass control: 0% hides it, and a positive percentage shows it at that opacity.
+**HUD opacity:** every managed player panel has a 0% to 100% slider in 5-point steps. At 0%, Quiet Dawn keeps its existing control: health/blood and stamina appear for resource alerts, and other panels remain hidden until HUD peek. Any value above 0% keeps that panel shown at the selected opacity, including during resource alerts. The game still controls form selection and contextual visibility. HUD peek temporarily reveals all managed panels at 100%, then restores each selected opacity or automatic behavior.
 
 **Show HUD** uses the game's **Toggle Controls Legend** action. Hold **Menu (Xbox)**, **Options (PlayStation)**, or **L (keyboard)** by default. To change the controller button, edit **Toggle Controls Legend** in Controller Tweaks and Remap. For keyboard, change the game's Controls Legend binding. Quiet Dawn follows the remapped action. Show HUD duration controls the time the HUD remains visible after activation.
 
 **Logging** is the final menu setting and the only diagnostic control. Leave it Off for normal play; On writes troubleshooting details to `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`.
 
-**Visibility thresholds:** keep the health/stamina display visible while human health or vampire blood is below 50%, or stamina is below 20%, by default. Exactly the selected percentage does not trigger the threshold. Damage and stamina use can also reveal it for their hold durations, even above the thresholds. A 0% threshold disables that low-resource trigger. These rules apply when the corresponding HUD visibility switch is Off.
+**Visibility thresholds:** keep the health/stamina display visible while human health or vampire blood is below 50%, or stamina is below 20%, by default. Exactly the selected percentage does not trigger the threshold. Damage and stamina use can also reveal it for their hold durations, even above the thresholds. A 0% threshold disables that low-resource trigger. These rules apply when the corresponding panel opacity is 0%. Positive opacity keeps that panel shown without resource-driven hiding.
 
-Unreleased menu settings now use percentages and direct On/Off values. Earlier development menu values are not converted. After updating a development installation, use Reset and Apply in Mod Settings, then load a save and set your preferences again. Reset replaces this mod's menu preferences with its defaults; back up settings.ini first if you want to retain a reference.
+Older On/Off panel settings are imported into the new opacity controls: Off becomes 0% and On becomes 100%. The upgrade adds the new keys while preserving existing settings, unknown keys and comments; it retains the original file as `settings.ini.before-panel-opacity`. Compass opacity remains unchanged. Keep recovery files if an upgrade error is reported.

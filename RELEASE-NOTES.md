@@ -1,5 +1,7 @@
 # Quiet Dawn - Customizable HUD
 
+Add opacity sliders for all 16 managed player HUD panels, from 0% to 100% in 5-point steps. Zero retains Quiet Dawn's existing automatic behavior, including health and stamina alerts; positive values keep each panel shown at the selected opacity.
+
 Add a native HUD event bridge for Framecore 2b's Performance profile. HUD hiding, resource alerts and manual peek use filtered native events, with player alerts preserved during enemy-widget bursts and event bindings refreshed after widget replacement.
 
 Fix the crash during native HUD hook initialization when an object has no serial number. Preserve deletion and replacement handling without constructing weak or soft references.

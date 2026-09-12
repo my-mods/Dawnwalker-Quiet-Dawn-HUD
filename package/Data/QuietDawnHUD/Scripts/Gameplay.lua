@@ -60,10 +60,19 @@ local function RegisterHook(path,...)
     return sessionRegisterHook(path,...)
 end
 local statNames = {}
+local dynamicPanels = config.dynamicPanels or {HumanStats=true, VampireStats=true}
+local panelOpacities = config.panelOpacities or {}
 for _, name in ipairs(names) do
-    if name == "HumanStats" or name == "VampireStats" then statNames[#statNames+1]=name end
+    local value=panelOpacities[name]
+    if value~=nil and (type(value)~="number" or value~=value or value<0 or value>1) then
+        print("[Quiet Dawn - Customizable HUD] Invalid panel opacity; disabled.")
+        return
+    end
+    if (name == "HumanStats" or name == "VampireStats") and dynamicPanels[name] then
+        statNames[#statNames+1]=name
+    end
 end
-local manualPeekEnabled=config.manualPeek and config.manualPeekSeconds>0 and #statNames>0
+local manualPeekEnabled=config.manualPeek and config.manualPeekSeconds>0 and #names>0
 if type(ExecuteInGameThreadWithDelay) ~= "function" or type(CancelDelayedAction) ~= "function" then
     print("[Quiet Dawn - Customizable HUD] Requires cancellable delayed game-thread callbacks; disabled.")
     return
@@ -482,9 +491,9 @@ if #statNames>0 then
     }) do
         specs[#specs+1]={STAT_ROOT..entry[1].."."..entry[1].."_C:"..entry[2],statUpdate(entry[3]),false,true}
     end
-    if manualPeekEnabled then
-        specs[#specs+1]={LEGEND..":ExecuteUbergraph_WBP_ControlsLegend",peekInput,false,false,true}
-    end
+end
+if manualPeekEnabled then
+    specs[#specs+1]={LEGEND..":ExecuteUbergraph_WBP_ControlsLegend",peekInput,false,false,true}
 end
 local function noop() end
 local function registerOne()
@@ -552,12 +561,31 @@ local function accept(object)
     return true
 end
 local function snapshot()
-    if statHookFailures then return nil end
     if not valid(hud) or not valid(controller) then return nil end
     if not sameObject(hud:GetWorld(),world) or not sameObject(controller:GetWorld(),world)
         or not sameObject(hud:GetOwningPlayer(),controller) then return nil end
     local pawn = controller.Pawn
     if not valid(pawn) or not sameObject(pawn:GetWorld(),world) then return nil end
+    local now = frameClock:GetGameTimeInSeconds(controller)
+    local pawnAddress=pawn:GetAddress()
+    if lastPawnAddress~=pawnAddress then
+        previousHealth,previousStamina,previousHealthAmount=nil,nil,nil
+        lastCombatAddress=nil
+        healthUntil,staminaUntil=0,0
+        if peekVisible then fullPending,dirty=true,true end
+        peekUntil,peekVisible=0,false
+        lastPawnAddress=pawnAddress
+    end
+    -- Peeking only needs a current player and the game clock. It also works
+    -- with both dynamic panels disabled or unavailable resource readings.
+    if peekRequested then
+        peekUntil=now+config.manualPeekSeconds
+        if not peekVisible then fullPending,dirty=true,true end
+        peekVisible=true
+        if D.debugLogging then D.event("manualPeek","player HUD visible for %.1fs",config.manualPeekSeconds) end
+    end
+    if #statNames==0 then return 0 end
+    if statHookFailures then return nil end
     local combat = pawn.CombatComponent
     if not valid(combat) then return nil end
     -- Match the resource displayed by the game's active stat widget.
@@ -586,15 +614,12 @@ local function snapshot()
     local stamina = tonumber(combat:GetStaminaPercentage())
     if not health or not stamina or health ~= health or stamina ~= stamina
         or health < 0 or stamina < 0 or health > 1 or stamina > 1 then return nil end
-    local now = frameClock:GetGameTimeInSeconds(controller)
-    local pawnAddress, combatAddress=pawn:GetAddress(), combat:GetAddress()
-    if lastPawnAddress~=pawnAddress or lastCombatAddress~=combatAddress then
+    local combatAddress=combat:GetAddress()
+    if lastCombatAddress~=combatAddress then
         previousHealth, previousStamina = nil, nil
         previousHealthAmount=nil
         healthUntil, staminaUntil = 0, 0
-        if peekVisible then fullPending,dirty=true,true end
-        peekUntil,peekVisible=0,false
-        lastPawnAddress, lastCombatAddress = pawnAddress, combatAddress
+        lastCombatAddress = combatAddress
     end
     if lastForm~=form or lastBloodAddress~=bloodAddress then
         previousHealth=nil
@@ -610,12 +635,6 @@ local function snapshot()
         staminaUntil = now + config.staminaHoldSeconds
     end
     healthDropped,staminaDropped=false,false
-    if peekRequested then
-        peekUntil=now+config.manualPeekSeconds
-        if not peekVisible then fullPending,dirty=true,true end
-        peekVisible=true
-        if D.debugLogging then D.event("manualPeek","player HUD visible for %.1fs",config.manualPeekSeconds) end
-    end
     previousHealth, previousStamina = health, stamina
     previousHealthAmount=healthAmount
     local needed = health < config.healthThreshold or stamina < config.staminaThreshold
@@ -739,10 +758,13 @@ local function step()
                     peekWidgetAddress,peekControllerAddress=object:GetAddress(),controllerAddress
                 end
                 local isStats = name == "HumanStats" or name == "VampireStats"
-                -- Alerts must not restore a transparent initialization value.
-                -- Unknown readings still restore the original game opacity.
-                local target = isStats and desired == 1 and (stateReady and 1 or entry.original) or 0
+                local target = panelOpacities[name] or 0
                 if name=="WBP_Compass" and config.compassOpacity~=nil then target=config.compassOpacity end
+                -- Zero opacity preserves resource-driven hiding and revealing.
+                -- Missing readings retain the game's opacity.
+                if isStats and dynamicPanels[name] then
+                    target = desired == 1 and (stateReady and 1 or entry.original) or 0
+                end
                 if peekVisible then target=1 end
                 if current ~= target then
                     opacity(object, target)
