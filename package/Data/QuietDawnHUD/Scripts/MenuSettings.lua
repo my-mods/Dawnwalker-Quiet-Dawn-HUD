@@ -2,8 +2,10 @@
 local directory = assert(debug.getinfo(1,'S').source:sub(2):match('^(.*[/\\])'))
 local Store = dofile(directory .. 'SettingsStore.lua')
 local schema = dofile(directory .. 'SettingsSchema.lua')
+local Timers = dofile(directory .. 'QuietDawnTimers.lua')
+local compatibleSchema = Timers.compatibleSchema(schema)
 local panels = {"HumanStats","VampireStats","WBP_Compass","WBP_HUD_QuestInfo","WBP_HUD_Quickslots","Crosshair","WBP_AA_Quickslots","WBP_OpenFocusPrompt","WBP_HUD_Quickslots_ChangePrompt","WBP_ControlsLegend","WBP_BuffContainer","WBP_HUD_AbilityCooldownsContainer","CombatFocusPanel","WBP_HUD_FocusCharge_Bar","WBP_HUD_SpecialAttackCooldown","XPBar","WBP_HudTimer"}
-local values, err = Store.load(directory, schema, function()
+local values, err = Store.load(directory, compatibleSchema, function()
     local legacyPath = directory .. 'QuietDawnConfig.lua'
     local legacy, le, lc = Store.read(legacyPath)
     local sources = legacy and {{path=legacyPath, text=legacy}} or {}
@@ -57,6 +59,7 @@ local values, err = Store.load(directory, schema, function()
         end
     end
     result.debugLogging=canonical or legacy or 0
+    Timers.normalize(result)
     return result, nil, sources
 end)
 if not values and err and err:match('^Missing setting:') then
@@ -67,7 +70,7 @@ if not values and err and err:match('^Missing setting:') then
     -- all old panel switches before deriving preferences; malformed input is
     -- rejected without replacing the original file.
     local legacySchema={}
-    for _, row in ipairs(schema) do
+    for _, row in ipairs(compatibleSchema) do
         if not row.key:match('^opacity_') and row.key~='timeHoldSeconds' and row.key~='hideSprintPrompt'
             and not row.key:match('^hideEnemy') then legacySchema[#legacySchema+1]=row end
     end
@@ -81,7 +84,14 @@ if not values and err and err:match('^Missing setting:') then
         end
     end
     values, err = dofile(directory..'UE4SSCommonSettingsUpgrade.lua').ensure(
-        Store, path, schema, defaults, 'sprint-prompt')
+        Store, path, compatibleSchema, defaults, 'sprint-prompt')
+end
+if values then
+    local needsUpgrade=false
+    for _, key in ipairs({'healthHoldSeconds','staminaHoldSeconds','manualPeekSeconds','timeHoldSeconds'}) do
+        if values[key]>10 or values[key]*2%1~=0 then needsUpgrade=true;break end
+    end
+    if needsUpgrade then values,err=Timers.ensure(Store,Store.path(directory),schema) end
 end
 if not values then print('[Quiet Dawn - Customizable HUD] Settings rejected: '..tostring(err));return {enabled=false,panels={},debugLogging=false} end
 values.enabled=values.enabled==1;values.manualPeek=values.manualPeek==1;values.debugLogging=values.debugLogging==1

@@ -3,7 +3,9 @@
 ## Unreleased
 
 - Hide Sprint and Haste running prompts by default, with a separate toggle in Mod Settings. Preserve other action prompts and support localized running labels.
-- Hide the time-of-day panel by default and reveal it briefly when time advances. Add its 0â€“100% opacity slider in 5-point steps and a configurable reveal duration defaulting to 4 seconds after the last time change. Keep time reveals, health alerts and HUD peek independent.
+- Limit all HUD timers to 0–10 seconds in 0.5-second steps. Zero disables the corresponding timed reveal; keep the existing defaults and independent health/stamina thresholds.
+
+- Hide the time-of-day panel by default and reveal it briefly when time advances. Add its 0–100% opacity slider in 5-point steps and a configurable reveal duration defaulting to 4 seconds after the last time change. Keep time reveals, health alerts and HUD peek independent.
 
 - Add opacity sliders for all 16 managed player HUD panels, from 0% to 100% in 5-point steps. Zero retains Quiet Dawn's existing automatic behavior, including health and stamina alerts; positive values keep each panel shown at the selected opacity.
 

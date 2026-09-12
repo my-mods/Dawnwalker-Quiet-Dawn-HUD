@@ -47,7 +47,7 @@ if config.timeHoldSeconds==nil then config.timeHoldSeconds=4.0 end
 if type(config.manualPeek)~="boolean" then return end
 for _, key in ipairs({"healthHoldSeconds", "staminaHoldSeconds", "manualPeekSeconds", "timeHoldSeconds"}) do
     local value=config[key]
-    if type(value) ~= "number" or value ~= value or value < 0 or value > 60 then
+    if type(value) ~= "number" or value ~= value or value < 0 or value > 10 or value*2%1 ~= 0 then
         print("[Quiet Dawn - Customizable HUD] Invalid hold duration; disabled.")
         return
     end
