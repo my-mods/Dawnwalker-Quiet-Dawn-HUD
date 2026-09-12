@@ -1,5 +1,7 @@
 # Quiet Dawn - Customizable HUD
 
+- Hide Sprint and Haste running prompts by default. A separate Mod Settings toggle restores them; other action prompts retain game behavior.
+
 Add opacity sliders for all 16 managed player HUD panels, from 0% to 100% in 5-point steps. Zero retains Quiet Dawn's existing automatic behavior, including health and stamina alerts; positive values keep each panel shown at the selected opacity.
 
 Add a native HUD event bridge for Framecore 2b's Performance profile. HUD hiding, resource alerts and manual peek use filtered native events, with player alerts preserved during enemy-widget bursts and event bindings refreshed after widget replacement.

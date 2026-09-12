@@ -90,6 +90,7 @@ local healthDropped, staminaDropped = false, false
 local statHookFailures, statHookAttempt = false, 0
 local firstFailedStatHook
 local firstFailedPeekHook
+local firstFailedPromptHook
 local peekRequested,peekUntil,peekVisible=false,0,false
 local peekWidgetAddress,peekControllerAddress
 local lastPawnAddress, lastCombatAddress, lastBloodAddress, lastForm, previousHealth, previousStamina
@@ -450,6 +451,20 @@ local function healthStep()
 end
 healthStep=D.wrap("enemyHealth",healthStep)
 local healthTurn=false
+local sprintPrompts=config.hideSprintPrompt and require("QuietDawnSprintPrompt").new({
+    StaticFindObject=StaticFindObject,opacity=opacity,D=D}) or nil
+local promptTurn=false
+local function promptsReady()
+    return sprintPrompts and hooks[ROOT..":OnSetInputPromptEnabled"]
+        and candidate==nil and valid(hud) and sprintPrompts.pending(hud)
+end
+local function promptEvent(context)
+    local object=unwrap(context)
+    if sprintPrompts and sameObject(object,hud) then
+        sprintPrompts.queue(object)
+        wake("sprintPrompt")
+    end
+end
 local function signal() if D.debugLogging then D.count("presetEvents") end;wake() end
 local function capture(context)
     statsRefresh=true
@@ -495,6 +510,7 @@ end
 if manualPeekEnabled then
     specs[#specs+1]={LEGEND..":ExecuteUbergraph_WBP_ControlsLegend",peekInput,false,false,true}
 end
+if sprintPrompts then specs[#specs+1]={ROOT..":OnSetInputPromptEnabled",promptEvent,false,false,false,true} end
 local function noop() end
 local function registerOne()
     if hookIndex > #specs then return true end
@@ -514,10 +530,13 @@ local function registerOne()
     else
         reportHookError(spec[1], success, pre, post)
     end
-    if not (success and type(pre)=="number" and type(post)=="number") and (spec[4] or spec[5]) then
+    if not (success and type(pre)=="number" and type(post)=="number") and (spec[4] or spec[5] or spec[6]) then
         statHookAttempt=statHookAttempt+1
         if statHookAttempt>=12 then
-            if spec[5] then
+            if spec[6] then
+                firstFailedPromptHook=firstFailedPromptHook or hookIndex
+                if D.debugLogging then D.event("sprintPrompt","prompt hook unavailable; prompts left to the game") end
+            elseif spec[5] then
                 firstFailedPeekHook=firstFailedPeekHook or hookIndex
                 print("[Quiet Dawn - Customizable HUD] Manual peek input unavailable; automatic health alerts remain enabled.")
             else
@@ -553,6 +572,7 @@ local function accept(object)
     end
     controller = pc
     hudAddress, controllerAddress = object:GetAddress(), pc:GetAddress()
+    if sprintPrompts then sprintPrompts.queue(object) end
     if manualPeekEnabled then
         local legend=object.WBP_ControlsLegend
         peekWidgetAddress=valid(legend) and legend:GetAddress() or nil
@@ -668,6 +688,13 @@ local function step()
         settingsStep()
         return false
     end
+    promptTurn=not promptTurn
+    if promptsReady() and promptTurn then
+        if valid(controller) and sameObject(hud:GetWorld(),world) and sameObject(controller:GetWorld(),world)
+            and sameObject(hud:GetOwningPlayer(),controller) then sprintPrompts.step(hud)
+        else sprintPrompts.cancel() end
+        return false
+    end
     -- Alternate with existing work: one health child operation per frame,
     -- sharing the same one-shot worker and its native frame gate.
     healthTurn=not healthTurn
@@ -695,7 +722,7 @@ local function step()
         return false
     end
     if cursor==0 and not dirty then
-        if markersReady() or healthReady() then return false end
+        if markersReady() or healthReady() or promptsReady() then return false end
         worker=false
         armExpiry()
         return true
@@ -788,7 +815,7 @@ local function step()
         return false
     end
     cursor=0
-    if dirty or statsPending or markersReady() or healthReady() then return false end
+    if dirty or statsPending or markersReady() or healthReady() or promptsReady() then return false end
     attempts=0
     worker=false
     armExpiry()
@@ -804,6 +831,10 @@ local function repeatUntilDone(delay,fn)
 end
 wake = function(statsOnly)
     if not statsOnly then
+        if firstFailedPromptHook then
+            hookIndex=math.min(hookIndex,firstFailedPromptHook)
+            firstFailedPromptHook=nil
+        end
         if firstFailedPeekHook then
             hookIndex=math.min(hookIndex,firstFailedPeekHook)
             firstFailedPeekHook=nil
@@ -818,7 +849,7 @@ wake = function(statsOnly)
         absent={}
         settingsPending,settingsAttempts=true,0
     end
-    if statsOnly~="marker" and statsOnly~="settings" and statsOnly~="resource" and statsOnly~="enemyHealth" then dirty=true end
+    if statsOnly~="marker" and statsOnly~="settings" and statsOnly~="resource" and statsOnly~="enemyHealth" and statsOnly~="sprintPrompt" then dirty=true end
     if worker then if D.debugLogging then D.count("workerCoalesced") end; return end
     worker=true
     if D.debugLogging then D.count("workerStarts") end

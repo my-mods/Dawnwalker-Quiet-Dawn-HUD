@@ -58,7 +58,7 @@ local values, err = Store.load(directory, schema, function()
     return result, nil, sources
 end)
 if not values and err and err:match('^Missing setting:') then
-    local defaults={hideEnemyNames=1, hideEnemyDifficultyIcons=1}
+    local defaults={hideEnemyNames=1, hideEnemyDifficultyIcons=1,hideSprintPrompt=1}
     local path=Store.path(directory)
     local text=Store.read(path)
     -- New keys avoid interpreting an old On=1 switch as 1% opacity. Require
@@ -67,7 +67,7 @@ if not values and err and err:match('^Missing setting:') then
     local legacySchema={}
     for _, row in ipairs(schema) do
         if not row.key:match('^opacity_')
-            and not row.key:match('^hideEnemy') then legacySchema[#legacySchema+1]=row end
+            and not row.key:match('^hideEnemy') and row.key~='hideSprintPrompt' then legacySchema[#legacySchema+1]=row end
     end
     for _, p in ipairs(panels) do
         if p~='WBP_Compass' then legacySchema[#legacySchema+1]={key='panel_'..p,values={0,1}} end
@@ -79,12 +79,13 @@ if not values and err and err:match('^Missing setting:') then
         end
     end
     values, err = dofile(directory..'UE4SSCommonSettingsUpgrade.lua').ensure(
-        Store, path, schema, defaults, 'panel-opacity')
+        Store, path, schema, defaults, 'sprint-prompt')
 end
 if not values then print('[Quiet Dawn - Customizable HUD] Settings rejected: '..tostring(err));return {enabled=false,panels={},debugLogging=false} end
 values.enabled=values.enabled==1;values.manualPeek=values.manualPeek==1;values.debugLogging=values.debugLogging==1
 values.hideEnemyNames=values.hideEnemyNames==1
 values.hideEnemyDifficultyIcons=values.hideEnemyDifficultyIcons==1
+values.hideSprintPrompt=values.hideSprintPrompt==1
 -- Menu percentages become fractions only at the gameplay boundary.
 for _, key in ipairs({'healthThreshold','staminaThreshold','compassOpacity'}) do values[key]=values[key]/100 end
 -- All named panels have opacity controls. Zero preserves Quiet Dawn

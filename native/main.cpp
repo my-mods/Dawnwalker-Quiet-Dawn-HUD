@@ -53,7 +53,8 @@ constexpr std::array specs{
     Spec{MARKER L"Construct"}, Spec{MARKER L"EnableHardLock"}, Spec{MARKER L"NotifyIndicatorCleared"},
     Spec{MARKER L"OnObservedStubIconTypeChanged"}, Spec{MARKER L"RefreshIndicatorsVisibility"}, Spec{MARKER L"ToggleShowOnlyMiddleIndicator"},
     Spec{ENEMY L"Construct"}, Spec{ENEMY L"UpdateTarget"},
-    Spec{L"/Game/_Dawnwalker/UI/_Unified/Combat/WBP_Combat_BossBar.WBP_Combat_BossBar_C:Update Owner"}
+    Spec{L"/Game/_Dawnwalker/UI/_Unified/Combat/WBP_Combat_BossBar.WBP_Combat_BossBar_C:Update Owner"},
+    Spec{HUD L"OnSetInputPromptEnabled"}
 };
 struct Scalar { int offset{}, bytes{}; };
 struct Binding { UFunction* node{}; QuietDawn::ObjectIdentity identity; std::array<Scalar,2> params{}; };
@@ -153,7 +154,7 @@ void capture(const std::shared_ptr<State>& state, UObject* object, FFrame& stack
         const auto& binding=state->bindings[id-1];
         if (resolve(binding.identity)!=node || !object) { if (state->debug) ++state->stale; return; }
         auto kind=specs[id-1].kind;
-        Event event; event.id=id; event.priority=id<=10;
+        Event event; event.id=id; event.priority=id<=10 || id==20;
         if (kind!=Kind::Context) {
             const auto locals=stack.Locals(); if (!locals) return;
             if (kind==Kind::Peek) {
